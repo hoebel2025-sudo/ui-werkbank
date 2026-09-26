@@ -1,0 +1,56 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3",
+            "args": [
+              "-B",
+              "${CLAUDE_PROJECT_DIR}/werkbank.py",
+              "hook"
+            ],
+            "asyncRewake": true,
+            "timeout": 604800
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3",
+            "args": [
+              "-B",
+              "${CLAUDE_PROJECT_DIR}/werkbank.py",
+              "hook"
+            ],
+            "asyncRewake": true,
+            "timeout": 604800
+          }
+        ]
+      }
+    ],
+    "ConfigChange": [
+      {
+        "matcher": "project_settings",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3",
+            "args": [
+              "-B",
+              "${CLAUDE_PROJECT_DIR}/werkbank.py",
+              "hook"
+            ],
+            "asyncRewake": true,
+            "timeout": 604800
+          }
+        ]
+      }
+    ]
+  }
+}

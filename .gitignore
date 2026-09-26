@@ -1,0 +1,13 @@
+# Laufzeit und lokale Daten
+/.venv/
+/.local/
+/projects/*
+!/projects/README.md
+__pycache__/
+.pytest_cache/
+*.pyc
+*.log
+*.tmp
+.DS_Store
+/.claude/settings.local.json
+/.playwright-mcp/

@@ -1,0 +1,14 @@
+[
+  {
+    "file": "html2canvas-1.4.1.min.js",
+    "source": "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js",
+    "sha256": "e87e550794322e574a1fda0c1549a3c70dae5a93d9113417a429016838eab8cb",
+    "bytes": 198689
+  },
+  {
+    "file": "html2canvas-LICENSE.txt",
+    "source": "https://raw.githubusercontent.com/niklasvh/html2canvas/v1.4.1/LICENSE",
+    "sha256": "86200ce4e92d9a22c41c8647a55f7a5fddff304ff89b4d36ecc699ed8c123d2c",
+    "bytes": 1061
+  }
+]

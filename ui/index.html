@@ -1,0 +1,824 @@
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>UI-Werkbank</title>
+<style>
+:root{--bg:#ecebe6;--surf:#fcfcfb;--panel:#f4f3ef;--line:#e1e0d9;--line2:#c8c6bd;--ink:#141412;--ink2:#4f4e4a;--ink3:#7c7a74;--ac:#1c5cab;--acw:#e6eefa;
+  --good:#0a7a1e;--warn:#8a5d00;--bad:#8a1f1f;--mark:#e0b000;--markbg:#fff6d6;--schatten:rgba(20,20,18,.18);color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#191917;--surf:#22221f;--panel:#2a2a26;--line:#34332f;--line2:#4a4944;--ink:#ecebe6;--ink2:#c3c1b9;--ink3:#95938b;
+  --ac:#6b9be0;--acw:#23324a;--good:#4fb35e;--warn:#d4a33a;--bad:#e06a6a;--mark:#f0c63a;--markbg:#3a3318;--schatten:rgba(0,0,0,.5);color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#191917;--surf:#22221f;--panel:#2a2a26;--line:#34332f;--line2:#4a4944;--ink:#ecebe6;--ink2:#c3c1b9;--ink3:#95938b;
+  --ac:#6b9be0;--acw:#23324a;--good:#4fb35e;--warn:#d4a33a;--bad:#e06a6a;--mark:#f0c63a;--markbg:#3a3318;--schatten:rgba(0,0,0,.5);color-scheme:dark}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font:13px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif;padding-inline:16px;padding-block:10px;box-sizing:border-box;display:flex;flex-direction:column;gap:8px}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+.lokalleiste{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12px}
+.lokalleiste .sp{margin-left:auto}.lokalleiste small{color:var(--ink3)}
+.msg.agent,.msg.codex,.msg.system{align-self:flex-start;background:var(--panel)}
+.status.fehler{color:var(--bad)}
+button,select,input{font:inherit;font-size:12px;color:var(--ink)}
+button{cursor:pointer;border:1px solid var(--line2);background:var(--surf);border-radius:4px;padding:3px 9px}
+button:hover{border-color:var(--ac)}button.on{background:var(--ac);border-color:var(--ac);color:#fff}
+select,input[type=text]{border:1px solid var(--line2);background:var(--surf);border-radius:4px;padding:3px 6px}
+button:focus-visible,textarea:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--ac);outline-offset:1px}
+/* Ansichtsleiste: Projekt- und Versionsbrowser der Seite */
+.vleiste{display:flex;align-items:center;gap:8px 10px;flex-wrap:wrap;background:var(--surf);border:1px solid var(--line);border-radius:6px;padding:6px 10px;font-variant-numeric:tabular-nums}
+.vleiste .lab{font-size:11px;color:var(--ink3)}
+.vleiste .n{color:var(--ink2);max-width:52ch;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.vleiste .m{color:var(--ink3);font-size:12px}
+.vleiste.alt{background:var(--markbg);border-color:var(--mark)}
+.vleiste .sp{margin-left:auto;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.abweich{font-size:11.5px;border:1px dashed var(--ac);color:var(--ac);border-radius:10px;padding:1px 8px}
+/* Arbeitsfläche */
+.flaeche{display:grid;grid-template-columns:minmax(0,1fr) 250px;gap:8px;flex:1;min-height:0}
+@media (max-width:820px){.flaeche{grid-template-columns:1fr}}
+.rahmen{position:relative;min-height:0;display:flex}
+.ueber{position:absolute;inset:0;z-index:5;cursor:crosshair}
+.ueber svg{position:absolute;inset:0;width:100%;height:100%}
+.ueber .mnr{cursor:pointer}
+.ueberLeiste{position:absolute;left:50%;top:8px;transform:translateX(-50%);z-index:2;display:flex;gap:6px;align-items:center;background:#1f1f1c;color:#ecebe6;border-radius:6px;padding:5px 8px;font-size:12px;box-shadow:0 4px 14px rgba(0,0,0,.3);cursor:default;white-space:nowrap}
+.ueberLeiste button{background:#2e2e2a;color:#ecebe6;border-color:#4a4944}.ueberLeiste button.on{background:#d62d20;border-color:#d62d20;color:#fff}
+.mlabel{position:absolute;z-index:3;font:12px system-ui,sans-serif;padding:3px 6px;border:1.5px solid #d62d20;border-radius:4px;background:#fff;color:#141412;width:230px}
+button.rot{background:#d62d20;border-color:#d62d20;color:#fff}
+.chip img{height:18px;border-radius:2px;border:1px solid var(--line2)}
+.chip.snap{cursor:pointer}.msg .ref.sc{border-color:#d62d20;color:#d62d20;background:#fdeceb;cursor:pointer}
+iframe{width:100%;height:100%;min-height:420px;border:1px solid var(--line);border-radius:6px;background:var(--surf)}
+.aend{background:var(--surf);border:1px solid var(--line);border-radius:6px;padding:10px;overflow:auto;display:flex;flex-direction:column;gap:6px}
+.aend h2{font-size:11.5px;color:var(--ink3);font-weight:600;margin:0}
+.aend .eintrag{border:1px solid var(--line);border-radius:4px;padding:6px 8px;cursor:pointer;font-size:12px}
+.aend .eintrag:hover{border-color:var(--mark)}.aend .eintrag.aktiv{border-color:var(--mark);background:var(--markbg)}
+.aend .eintrag small{display:block;color:var(--ink3)}
+.leer{color:var(--ink3);font-size:12px}
+.hinweis{font-size:11px;color:var(--ink3)}
+/* Chatfenster */
+.chat{position:fixed;z-index:10;width:600px;height:560px;max-width:calc(100vw - 8px);max-height:calc(100vh - 8px);
+  background:var(--surf);border:1px solid var(--line2);border-radius:8px;box-shadow:0 8px 28px var(--schatten);display:grid;grid-template-rows:auto minmax(0,1fr)}
+.chat.klein{height:auto!important;width:auto!important}
+.chat.klein .innen,.chat.klein .rz{display:none}
+.rz{position:absolute;z-index:2}
+.rz[data-d=n],.rz[data-d=s]{left:10px;right:10px;height:8px;cursor:ns-resize}.rz[data-d=n]{top:-4px}.rz[data-d=s]{bottom:-4px}
+.rz[data-d=e],.rz[data-d=w]{top:10px;bottom:10px;width:8px;cursor:ew-resize}.rz[data-d=e]{right:-4px}.rz[data-d=w]{left:-4px}
+.rz[data-d=ne],.rz[data-d=nw],.rz[data-d=se],.rz[data-d=sw]{width:14px;height:14px}
+.rz[data-d=ne]{top:-5px;right:-5px;cursor:nesw-resize}.rz[data-d=sw]{bottom:-5px;left:-5px;cursor:nesw-resize}
+.rz[data-d=nw]{top:-5px;left:-5px;cursor:nwse-resize}.rz[data-d=se]{bottom:-5px;right:-5px;cursor:nwse-resize}
+.ckopf{display:flex;align-items:center;gap:8px;padding:6px 10px;border-bottom:1px solid var(--line);cursor:move;user-select:none;background:var(--panel);border-radius:8px 8px 0 0;flex-wrap:nowrap;min-width:0}
+.ckopf select{min-width:0;max-width:35%}
+.ckopf .status{flex:1 1 0;min-width:0;overflow:hidden}
+.ckopf .status span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ckopf .status i{flex:0 0 8px}
+.save-status{flex:0 0 14ch;font-size:11px;color:var(--ink3);white-space:nowrap;text-align:right}
+.save-status.fehler{color:var(--bad)}
+.ckopf b{font-size:12.5px}.ckopf .sp{margin-left:auto;display:flex;gap:6px;align-items:center}
+.status{display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--ink3)}
+.status i{width:8px;height:8px;border-radius:50%;background:var(--ink3)}.status.an i{background:var(--good)}
+.innen{display:grid;grid-template-columns:minmax(0,1fr) 180px;min-height:0}
+.verlauf{display:grid;grid-template-rows:minmax(0,1fr) auto;min-height:0;border-right:1px solid var(--line)}
+.msgs{overflow:auto;padding:8px 10px;display:flex;flex-direction:column;gap:8px}
+.msg{border-radius:6px;padding:6px 9px;max-width:92%;white-space:pre-wrap;word-wrap:break-word;font-size:12.5px;border:1px solid transparent}
+.msg.user{align-self:flex-end;background:var(--acw)}
+.msg.claude{align-self:flex-start;background:var(--panel)}
+.msg .meta{display:block;font-size:10.5px;color:var(--ink3);margin-top:3px}
+.msg .pm{display:inline-block;font-size:10px;border:1px solid var(--line2);border-radius:8px;padding:0 6px;margin-right:4px}
+.msg.fehler{border-color:var(--bad)}.msg.fehler .meta{color:var(--bad);font-weight:600}.msg.sende{opacity:.75}
+.arbeitet{align-self:flex-start;font-size:12px;color:var(--ac);padding:2px 4px}
+.msg.episode{border-color:var(--mark);box-shadow:0 0 0 2px var(--markbg)}
+.msg .vlink{color:var(--ac);cursor:pointer;text-decoration:underline}
+.chips{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.chip{display:inline-flex;align-items:center;gap:4px;font-size:11px;border:1px solid var(--line2);border-radius:10px;padding:1px 7px;background:var(--surf);max-width:100%}
+.chip b{font-weight:600;color:var(--ac);white-space:nowrap}.chip span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:220px}
+.chip button{border:0;padding:0 2px;background:none;font-size:12px;line-height:1;color:var(--ink3)}
+.eingabe{border-top:1px solid var(--line);padding:7px 8px;display:grid;gap:5px}
+.eingabe.ziel{background:var(--acw)}
+.eingabe .ziele{font-size:11px;color:var(--ink3)}
+.tfeld{position:relative;background:var(--surf);border:1px solid var(--line2);border-radius:4px}
+.tfeld:focus-within{outline:2px solid var(--ac);outline-offset:1px}
+.eingabe textarea,.spiegel{font:inherit;font-size:12.5px;line-height:1.5;padding:6px;white-space:pre-wrap;overflow-wrap:break-word;word-break:normal;letter-spacing:normal}
+.eingabe textarea{position:relative;z-index:1;display:block;width:100%;min-height:58px;max-height:40vh;border:0;background:transparent;color:var(--ink);resize:vertical;outline:none}
+.spiegel{position:absolute;inset:0;color:transparent;overflow:hidden;pointer-events:none}
+.spiegel mark{color:transparent;background:var(--acw);border-radius:3px;box-shadow:0 0 0 1.5px var(--ac)}
+.spiegel mark.fremd{background:var(--markbg);box-shadow:0 0 0 1.5px var(--mark)}
+.chip .rf{font-weight:700;color:#fff;background:var(--ac);border-radius:7px;padding:0 5px;font-size:10px}
+.chip.nicht{opacity:.6}.chip.nicht::after{content:'nicht im Text';font-size:10px;color:var(--ink3)}
+.msg .ref{background:var(--acw);border:1px solid var(--ac);border-radius:6px;padding:0 4px;font-size:11px;font-weight:600;color:var(--ac);cursor:help}
+.eingabe .reihe{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.eingabe .reihe .sp{margin-left:auto}
+.versionen{display:grid;grid-template-rows:auto auto minmax(0,1fr) auto;min-height:0}
+.versionen h3{font-size:11px;color:var(--ink3);margin:0;padding:7px 8px 4px;font-weight:600}
+.neu{padding:0 6px 6px;display:grid;gap:4px}
+.neu input{width:100%}.neu .reihe{display:flex;gap:4px}
+.vliste{overflow:auto;padding:0 6px;display:flex;flex-direction:column;gap:3px}
+.vitem{border:1px solid var(--line);border-radius:4px;padding:4px 6px;cursor:pointer;font-size:11.5px;background:var(--surf)}
+.vitem:hover{border-color:var(--ac)}.vitem.gezeigt{border-color:var(--ac);background:var(--acw)}
+.vitem small{display:block;color:var(--ink3);font-variant-numeric:tabular-nums}
+.vitem .nm{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.vfuss{padding:6px}.vfuss button{width:100%}
+@media (max-width:620px){.chat{width:calc(100vw - 16px)!important;left:8px!important}.innen{grid-template-columns:1fr}.versionen{display:none}}
+</style>
+</head><body>
+<div class="lokalleiste"><b>UI-Werkbank</b><small>Nachricht schreiben · gemeinsam an der Oberfläche arbeiten</small></div>
+<div class="vleiste" id="vleiste"></div>
+<div class="flaeche">
+  <div class="rahmen"><iframe id="frame" title="Mockup"></iframe>
+    <div class="ueber" id="ueber" hidden><div class="ueberLeiste" id="ueberLeiste"></div><svg id="ueberSvg"></svg></div></div>
+  <div class="aend" id="aend"><h2>Änderungen dieser Version</h2><span class="leer">lädt …</span></div>
+</div>
+
+<div class="chat" id="chat">
+  <div class="rz" data-d="n"></div><div class="rz" data-d="s"></div><div class="rz" data-d="e"></div><div class="rz" data-d="w"></div>
+  <div class="rz" data-d="ne"></div><div class="rz" data-d="nw"></div><div class="rz" data-d="se"></div><div class="rz" data-d="sw"></div>
+  <div class="ckopf" id="ckopf"><b>Chat</b>
+    <select id="chatProj" title="Projekt, an dem wir im Chat arbeiten: neue Versionen entstehen hier"></select>
+    <span class="status" id="status"><i></i><span>prüft …</span></span>
+    <span class="save-status" id="saveStatus" aria-label="Speicherstatus">prüft …</span>
+    <span class="sp"><button id="klein" title="minimieren">–</button></span></div>
+  <div class="innen">
+    <div class="verlauf">
+      <div class="msgs" id="msgs"></div>
+      <div class="eingabe" id="eingabe">
+        <div class="ziele" id="ziele"></div>
+        <div class="chips" id="entwurfChips"></div>
+        <div class="tfeld"><div class="spiegel" id="spiegel" aria-hidden="true"></div>
+        <textarea id="text" placeholder="Nachricht schreiben …"></textarea></div>
+        <div class="reihe"><button id="picker" title="Elemente im angezeigten Mockup anklicken und anhängen (Esc beendet)">Auswählen</button>
+          <button id="snapBtn" title="Mockup einfrieren, Stellen markieren und als Paket (Zustand, Markierungen mit Treffern, Bild) anhängen">Snapshot</button><button id="snapWeg" hidden title="Snapshot verwerfen">Verwerfen</button>
+          <span class="hinweis" id="pickhinweis" role="status"></span><span class="sp"><button id="senden" class="on" disabled>Senden</button></span></div>
+      </div>
+    </div>
+    <div class="versionen">
+      <h3 id="vtitel">Versionen</h3>
+      <div class="neu" id="neu" hidden><input type="text" id="neuName" placeholder="Name, z. B. Einstiegsoberfläche" maxlength="60">
+        <div class="reihe"><button id="neuOk" class="on">Anlegen</button><button id="neuAb">Abbrechen</button></div></div>
+      <div class="vliste" id="vliste"></div>
+      <div class="vfuss"><button id="aktuell">Aktuelle zeigen</button></div>
+    </div>
+  </div>
+</div>
+
+<script src="local-adapter.js"></script>
+<script>
+/* ================================================================ Zustand
+   Zwei Zeiger: der Chat-Stand (chatP/chatV: woran wir arbeiten, Ziel neuer Versionen) und die Ansicht (ansP/ansV: was das
+   Mockup zeigt). Klicks im Chatfenster stellen die Ansicht auf den Chat-Stand; die Wahl oben ändert nur die Ansicht. */
+const $ = s => document.getElementById(s);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
+const pad = n => String(n).padStart(3, '0');
+let PROJ = [], VERS = [], MSGS = [], entwurf = [], picken = false, markiert = null, vergleich = false;
+let chatP = null, chatV = null, ansP = null, ansV = null;
+let db = null, dienste = null, sendet = false, wiederherstellen = true, oberflaecheBereit = false;
+let pendingMessage = null;
+const OFFEN = new Map();   // Nachrichten, die gerade gesendet werden: sofort sichtbar, bis die Datenbank sie liefert
+const zeit = iso => { if (!iso) return ''; const d = new Date(iso), h = new Date();
+  const hm = d.toLocaleTimeString('de-DE', {hour: '2-digit', minute: '2-digit'});
+  return d.toDateString() === h.toDateString() ? hm : d.toLocaleDateString('de-DE', {day: '2-digit', month: '2-digit'}) + ' ' + hm; };
+const lokal = {get(k, d) { return dienste ? dienste.preferences.get(k, d) : d; },
+  set(k, v) { if (dienste) dienste.preferences.set(k, v); }};
+const projekt = p => PROJ.find(x => x.id === p) || {id: p, name: p || '–'};
+const vListe = p => VERS.filter(v => v.projekt === p).sort((a, b) => a.nr - b.nr);
+const version = (p, nr) => VERS.find(v => v.projekt === p && v.nr === nr);
+const letzte = p => { const l = vListe(p); return l.length ? l[l.length - 1].nr : null; };
+const vorgaenger = (p, nr) => vListe(p).filter(v => v.nr < nr).pop();
+const gekoppelt = () => ansP === chatP && ansV === chatV;
+
+/* ================================================================ Ansicht (Mockup im Rahmen) */
+function ansichtSetzen(p, nr) {
+  ansP = p; ansV = nr; vergleich = false; markiert = null;
+  const v = nr == null ? null : version(p, nr);
+  if (v) { $('frame').removeAttribute('srcdoc'); $('frame').src = v.datei; }
+  else { $('frame').removeAttribute('src'); $('frame').srcdoc = `<body style="font:14px system-ui;color:#7c7a74;display:grid;place-items:center;height:90vh;margin:0">
+      <div style="max-width:46ch;text-align:center">${p ? `Projekt „${esc(projekt(p).name)}“ hat noch keine Version.<br>Beschreib im Chat, was entstehen soll.` : 'Noch kein Projekt.<br>Oben im Chat „+ Neues Projekt …“ wählen und einen Namen vergeben.'}</div></body>`; }
+  lokal.set('ansicht', {p, nr}); leiste(); aenderungen();
+}
+function zumChat() { ansichtSetzen(chatP, chatV); versionsliste(); episode(true); }
+function chatSetzen(p, nr, {folgen = true} = {}) {
+  chatP = p; chatV = nr; lokal.set('chat', {p, nr}); $('chatProj').value = p; versionsliste(); ziele(); episode(true);
+  if (folgen) ansichtSetzen(p, nr);
+}
+function frameDoc() { try { return $('frame').contentDocument; } catch (e) { return null; } }
+$('frame').addEventListener('load', () => { const d = frameDoc(); if (!d || !d.head) return;
+  const st = d.createElement('style');
+  st.textContent = `.wb-mark{outline:3px solid #e0b000!important;outline-offset:3px;filter:drop-shadow(0 0 3px #e0b000) drop-shadow(0 0 1px #e0b000)}
+    .wb-hover{outline:2px dashed #1c5cab!important;outline-offset:2px;filter:drop-shadow(0 0 2px #1c5cab);cursor:crosshair!important}
+    .wb-gewaehlt{outline:2px solid #1c5cab!important;outline-offset:2px}`;
+  d.head.appendChild(st);
+  if (picken) pickerAn();
+  if (markiert != null) markieren(markiert);
+});
+
+/* ================================================================ Ansichtsleiste oben: Projekt- und Versionsbrowser */
+function leiste() {
+  const L = vListe(ansP); const akt = letzte(ansP); const v = ansV == null ? null : version(ansP, ansV);
+  const seit = L.filter(x => x.nr > ansV).length; const istAkt = ansV === akt;
+  const vorg = ansV == null ? null : vorgaenger(ansP, ansV);
+  const pOpt = PROJ.map(p => `<option value="${esc(p.id)}" ${p.id === ansP ? 'selected' : ''}>${esc(p.name)}</option>`).join('');
+  const vOpt = L.map(x => `<option value="${x.nr}" ${x.nr === ansV ? 'selected' : ''}>Version ${x.nr}</option>`).join('') || '<option>keine Version</option>';
+  const info = vergleich && vorg ? `<span class="n">Vergleich: Version ${vorg.nr}, Vorgänger von Version ${ansV}</span>`
+    : (v ? `<span class="n" title="${esc(v.name)}">${esc(v.name)}</span><span class="m">${zeit(v.t)}</span>${istAkt ? '<span class="m">aktuelle Version</span>' : `<span class="m">${seit} ${seit === 1 ? 'Version' : 'Versionen'} seitdem · Aktuell: Version ${akt}</span>`}` : '');
+  $('vleiste').innerHTML = `<span class="lab">Ansicht</span><select id="ansProj" title="Projekt anzeigen (ändert den Chat nicht)">${pOpt}</select><select id="ansVer" title="Version anzeigen (ändert den Chat nicht)">${vOpt}</select>${info}
+    <span class="sp">${gekoppelt() ? '' : `<span class="abweich">weicht vom Chat ab (${esc(projekt(chatP).name)}${chatV ? ' V' + chatV : ''})</span><button id="zumChat">Zum Chat-Stand</button>`}
+      ${vorg ? `<button id="vgl" class="${vergleich ? 'on' : ''}" title="zwischen dieser Version und ihrem Vorgänger umschalten (Taste V)">${vergleich ? 'Nachher zeigen' : 'Vorher zeigen'}</button>` : ''}
+      ${v && !istAkt ? '<button id="zuakt">Zur aktuellen</button>' : ''}</span>`;
+  $('vleiste').classList.toggle('alt', !!v && (!istAkt || vergleich));
+  if (chatP) ziele();
+  $('ansProj').onchange = e => ansichtSetzen(e.target.value, letzte(e.target.value));
+  $('ansVer').onchange = e => ansichtSetzen(ansP, +e.target.value);
+  if ($('zumChat')) $('zumChat').onclick = zumChat;
+  if ($('vgl')) $('vgl').onclick = umschalten;
+  if ($('zuakt')) $('zuakt').onclick = () => ansichtSetzen(ansP, akt);
+}
+function umschalten() {
+  const vorg = ansV == null ? null : vorgaenger(ansP, ansV); if (!vorg) return;
+  vergleich = !vergleich; $('frame').src = vergleich ? vorg.datei : version(ansP, ansV).datei; leiste();
+}
+
+/* ================================================================ Änderungen der angezeigten Version */
+function aenderungen() {
+  const v = ansV == null ? null : version(ansP, ansV); const a = (v && v.aenderungen) || [];
+  $('aend').innerHTML = `<h2>${v ? `Änderungen in Version ${v.nr}${v.basis ? ` gegenüber ${v.basis}` : ''}` : 'Änderungen'}</h2>` +
+    (a.length ? a.map((x, i) => `<div class="eintrag ${markiert === i ? 'aktiv' : ''}" data-i="${i}" tabindex="0">${esc(x.text)}${x.ziele && x.ziele.length ? '' : '<small>ohne Markierung im Bild</small>'}</div>`).join('')
+      : '<span class="leer">Keine Änderungen eingetragen.</span>') +
+    (a.some(x => x.ziele && x.ziele.length) ? '<span class="hinweis">Klick markiert die Stelle im Mockup. „Vorher zeigen“ oben schaltet auf den Vorgänger um.</span>' : '');
+  $('aend').querySelectorAll('.eintrag').forEach(e => { const f = () => { markiert = markiert === +e.dataset.i ? null : +e.dataset.i; if (vergleich) umschalten(); markieren(markiert); aenderungen(); };
+    e.onclick = f; e.onkeydown = ev => { if (ev.key === 'Enter') f(); }; });
+}
+function markieren(i) {
+  const d = frameDoc(); if (!d) return; d.querySelectorAll('.wb-mark').forEach(x => x.classList.remove('wb-mark'));
+  const v = version(ansP, ansV); const z = i == null || !v ? null : ((v.aenderungen || [])[i] || {}).ziele;
+  if (!z) return; let erstes = null;
+  z.forEach(sel => { try { d.querySelectorAll(sel).forEach(x => { x.classList.add('wb-mark'); erstes = erstes || x; }); } catch (e) { /* ungültiger Selektor */ } });
+  if (erstes && erstes.scrollIntoView) erstes.scrollIntoView({block: 'center', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'});
+}
+
+/* ================================================================ Chat: Projektwahl, neues Projekt, Versionsliste */
+function projektwahl() {
+  $('chatProj').innerHTML = PROJ.map(p => `<option value="${esc(p.id)}">${esc(p.name)}</option>`).join('') + '<option value="__neu">+ Neues Projekt …</option>';
+  $('chatProj').value = chatP;
+}
+$('chatProj').onchange = e => { const p = e.target.value;
+  if (p === '__neu') { $('chatProj').value = chatP; $('neu').hidden = false; $('neuName').focus(); return; }
+  chatSetzen(p, letzte(p)); };
+$('neuAb').onclick = () => { $('neu').hidden = true; $('neuName').value = ''; };
+$('neuName').onkeydown = ev => { if (ev.key === 'Enter') $('neuOk').click(); if (ev.key === 'Escape') $('neuAb').click(); };
+$('neuOk').onclick = async () => {
+  const name = $('neuName').value.trim(); if (!name) { $('neuName').focus(); return; }
+  let id = name.toLowerCase().normalize('NFKD').replace(/[̀-ͯ]/g, '').replace(/ß/g, 'ss').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 30) || 'projekt';
+  if (PROJ.some(p => p.id === id)) id += '-' + Date.now().toString(36).slice(-3);
+  const p = {name, t: new Date().toISOString(), art: 'mockup'};
+  if (db) { try { await db.doc('projekte/' + id).set(p); } catch (e) { $('neuName').value = name; alertZeile('Projekt nicht angelegt: ' + e.code); return; } }
+  else PROJ.push({id, ...p});
+  $('neu').hidden = true; $('neuName').value = '';
+  if (!PROJ.some(x => x.id === id)) PROJ.push({id, ...p});
+  projektwahl(); chatSetzen(id, null);
+};
+function alertZeile(t) { $('pickhinweis').textContent = t; }
+function versionsliste() {
+  const L = vListe(chatP);
+  $('vtitel').textContent = `Versionen · ${projekt(chatP).name}`;
+  $('vliste').innerHTML = L.map(v => `<div class="vitem ${v.nr === chatV ? 'gezeigt' : ''}" data-nr="${v.nr}" draggable="true" tabindex="0" title="${esc(v.name)} · in den Chat ziehen, um sie anzuhängen">
+      <small>Version ${v.nr} · ${zeit(v.t)}${v.nr === letzte(chatP) ? ' · aktuell' : ''}</small><span class="nm">${esc(v.name)}</span></div>`).join('')
+    || '<span class="leer">Noch keine Version. Beschreib im Chat, was entstehen soll.</span>';
+  $('vliste').querySelectorAll('.vitem').forEach(e => {
+    const f = () => chatSetzen(chatP, +e.dataset.nr);
+    e.onclick = f; e.onkeydown = ev => { if (ev.key === 'Enter') f(); };
+    e.ondragstart = ev => { ev.dataTransfer.setData('text/wb-version', JSON.stringify({p: chatP, nr: +e.dataset.nr})); ev.dataTransfer.effectAllowed = 'copy'; };
+  });
+  const g = $('vliste').querySelector('.gezeigt'); if (g) g.scrollIntoView({block: 'nearest'});
+}
+$('aktuell').onclick = () => { chatSetzen(chatP, letzte(chatP)); $('vliste').scrollTop = $('vliste').scrollHeight; };
+
+/* ================================================================ Chatverlauf */
+function chipText(c) { const pn = projekt(c.projekt).name; return c.art === 'version' ? `${pn} V${c.version}` : `${pn} V${c.version}`; }
+const bildQuelle = value => typeof value === 'string' && /^data:image\/(jpeg|png);base64,[A-Za-z0-9+/=]+$/.test(value) ? value : '';
+function chipHtml(c, i, entf, text) {
+  const imText = !c.ref || text == null || new RegExp('\\b' + c.ref + '\\b').test(text);
+  if (c.art === 'snapshot') return `<span class="chip snap${imText ? '' : ' nicht'}" data-ref="${esc(c.ref)}" data-snap="${esc(c.snap)}" title="Snapshot: Klick stellt Zustand und Markierungen wieder her"><span class="rf" style="background:#d62d20">${esc(c.ref)}</span>${bildQuelle(c.thumb) ? `<img src="${esc(bildQuelle(c.thumb))}" alt="">` : ''}<b>${esc(chipText(c))}</b><span>${esc(c.label)}</span>${entf ? `<button data-x="${i}" title="entfernen (auch aus dem Text)">×</button>` : ''}</span>`;
+  return `<span class="chip${imText ? '' : ' nicht'}" data-ref="${esc(c.ref || '')}" title="${esc(c.art === 'version' ? 'Version ' + c.version + ': ' + c.label : (c.selektor || ''))}">${c.ref ? `<span class="rf">${esc(c.ref)}</span>` : ''}<b>${esc(chipText(c))}</b><span>${esc(c.label)}</span>${entf ? `<button data-x="${i}" title="entfernen (auch aus dem Text)">×</button>` : ''}</span>`;
+}
+/* Kürzel im Text: nur die, zu denen es einen Chip gibt */
+function refMuster(chips) { const r = (chips || []).map(c => c.ref).filter(Boolean); return r.length ? new RegExp('\\b(' + r.join('|') + ')\\b', 'g') : null; }
+function refZeigen(c, an) {           // Element im Mockup hervorheben, wenn diese Version gerade zu sehen ist
+  const d = frameDoc(); if (!d || !c || c.art !== 'element') return;
+  d.querySelectorAll('.wb-ref').forEach(x => x.classList.remove('wb-ref', 'wb-hover'));
+  if (an && c.projekt === ansP && c.version === ansV) { try { d.querySelectorAll(c.selektor).forEach(x => x.classList.add('wb-ref', 'wb-hover')); } catch (e) { /* weg */ } }
+}
+function msgHtml(m) {
+  const chips = (m.chips || []).map(c => chipHtml(c)).join('');
+  const mu = refMuster(m.chips);
+  let txt = esc(m.text).replace(/Version (\d+)/g, (a, n) => `<span class="vlink" data-v="${n}" data-p="${esc(m.projekt || '')}">${a}</span>`);
+  if (mu) txt = txt.replace(mu, r => { const c = m.chips.find(x => x.ref === r); return `<span class="ref${c.art === 'snapshot' ? ' sc' : ''}" data-ref="${r}"${c.snap ? ` data-snap="${esc(c.snap)}"` : ''} title="${esc(chipText(c) + ': ' + c.label)}">${r}</span>`; });
+  const jobStatus = window.werkbankJobLabels?.[m.id];
+  const st = m.rolle === 'user' ? (jobStatus ? ' · ' + esc(jobStatus) : ({sende: ' · wird gespeichert …', gesendet: ' · übergeben', beantwortet: ' · beantwortet', wartet: ' · lokal gespeichert · wartet auf Agent',
+    fehler: ` · NICHT GESPEICHERT (${esc(m.fehler || 'Fehler')})`}[m.status] || '')) : '';
+  const pm = `<span class="pm">${esc(projekt(m.projekt).name)}</span>`;
+  return `<div class="msg ${esc(m.rolle)}${m.status === 'fehler' ? ' fehler' : ''}${m.status === 'sende' ? ' sende' : ''}" data-id="${esc(m.id)}">${txt}${chips ? `<div class="chips">${chips}</div>` : ''}<span class="meta">${pm}${({user: 'du', claude: 'Claude', codex: 'Codex', agent: 'Agent', system: 'System'})[m.rolle] || 'Agent'} · ${zeit(m.t)}${m.erzeugt ? ' · erzeugte Version ' + esc(m.erzeugt) : ''}${st}</span></div>`;
+}
+function chatRender() {
+  const box = $('msgs'); const unten = box.scrollHeight - box.scrollTop - box.clientHeight < 40;
+  const ids = new Set(MSGS.map(m => m.id)); [...OFFEN.keys()].forEach(k => { if (ids.has(k) && MSGS.find(m => m.id === k).status !== 'sende') OFFEN.delete(k); });
+  const alle = [...MSGS.filter(m => !OFFEN.has(m.id)), ...OFFEN.values()].sort((a, b) => String(a.t || '').localeCompare(String(b.t || '')));
+  box.innerHTML = alle.map(msgHtml).join('') || '<span class="leer">Noch keine Nachrichten.</span>';
+  // A stored request alone is no evidence that an agent is working.
+  box.querySelectorAll('.vlink').forEach(e => e.onclick = () => { if (version(e.dataset.p, +e.dataset.v)) chatSetzen(e.dataset.p, +e.dataset.v); });
+  box.querySelectorAll('[data-snap]').forEach(e => e.onclick = () => snapZeigen(e.dataset.snap));
+  box.querySelectorAll('[data-ref]').forEach(e => { const m = alle.find(x => x.id === e.closest('.msg').dataset.id); const c = m && (m.chips || []).find(x => x.ref === e.dataset.ref);
+    if (c) { e.onmouseenter = () => refZeigen(c, true); e.onmouseleave = () => refZeigen(c, false); } });
+  episode(false); if (unten) box.scrollTop = box.scrollHeight;
+}
+function episode(scroll) {
+  const v = chatV == null ? null : version(chatP, chatV); const ids = new Set((v && v.episode) || []);
+  let erstes = null; $('msgs').querySelectorAll('.msg').forEach(e => { const an = ids.has(e.dataset.id); e.classList.toggle('episode', an); if (an && !erstes) erstes = e; });
+  if (scroll && erstes) erstes.scrollIntoView({block: 'start'});
+}
+function ziele() {
+  if (!chatP) { $('ziele').textContent = 'Ziel: noch kein Projekt angelegt'; return; }
+  $('ziele').textContent = `Ziel: ${projekt(chatP).name}${chatV ? ', ausgehend von Version ' + chatV : ', noch ohne Version (Ergebnis wird Version 1)'}`
+    + (gekoppelt() ? '' : ` · Auswahl kommt aus der Ansicht ${projekt(ansP).name}${ansV ? ' V' + ansV : ''}`);
+}
+
+/* ================================================================ Entwurf: Text und angehängte Elemente */
+let marke = null;                       // letzte Schreibmarke im Textfeld (das Feld verliert beim Klick ins Mockup den Fokus)
+const ta = $('text');
+['keyup', 'click', 'select', 'input', 'focus'].forEach(t => ta.addEventListener(t, () => { marke = [ta.selectionStart, ta.selectionEnd]; }));
+function naechsteRef() { return 'R' + (entwurf.filter(c => /^R\d+$/.test(c.ref || '')).reduce((m, c) => Math.max(m, +c.ref.slice(1)), 0) + 1); }
+function refEinsetzen(ref) {
+  const v = ta.value; const [a, b] = marke || [v.length, v.length];
+  const vor = v.slice(0, a), nach = v.slice(b);
+  const ein = (vor && !/\s$/.test(vor) ? ' ' : '') + ref + (nach && /^\s/.test(nach) ? '' : ' ');
+  ta.value = vor + ein + nach; const pos = (vor + ein).length; marke = [pos, pos];
+}
+function refEntfernen(ref) { ta.value = ta.value.replace(new RegExp('\\s?\\b' + ref + '\\b', 'g'), '').replace(/^\s+/, ''); marke = null; }
+function spiegeln() {
+  const mu = refMuster(entwurf);
+  let h = esc(ta.value); if (mu) h = h.replace(mu, r => { const c = entwurf.find(x => x.ref === r); return `<mark class="${c && c.projekt !== chatP ? 'fremd' : ''}">${r}</mark>`; });
+  $('spiegel').innerHTML = h + '\n'; $('spiegel').scrollTop = ta.scrollTop;
+}
+ta.addEventListener('scroll', () => { $('spiegel').scrollTop = ta.scrollTop; });
+new ResizeObserver(spiegeln).observe(ta);
+function entwurfRender() {
+  $('entwurfChips').innerHTML = entwurf.map((c, i) => chipHtml(c, i, true, ta.value)).join('');
+  $('entwurfChips').querySelectorAll('[data-x]').forEach(b => b.onclick = () => { const c = entwurf.splice(+b.dataset.x, 1)[0]; refZeigen(c, false); if (c && c.ref) refEntfernen(c.ref); entwurfRender(); pickMarken(); });
+  $('entwurfChips').querySelectorAll('[data-snap]').forEach(e => e.onclick = ev => { if (!ev.target.closest('[data-x]')) snapZeigen(e.dataset.snap); });
+  $('entwurfChips').querySelectorAll('.chip').forEach(e => { const c = entwurf.find(x => x.ref === e.dataset.ref); if (c) { e.onmouseenter = () => refZeigen(c, true); e.onmouseleave = () => refZeigen(c, false); } });
+  spiegeln();
+  lokal.set('entwurf', {text: ta.value, chips: entwurf});
+}
+const eing = $('eingabe');
+eing.ondragover = ev => { if ([...ev.dataTransfer.types].includes('text/wb-version')) { ev.preventDefault(); eing.classList.add('ziel'); } };
+eing.ondragleave = () => eing.classList.remove('ziel');
+eing.ondrop = ev => { eing.classList.remove('ziel'); let x; try { x = JSON.parse(ev.dataTransfer.getData('text/wb-version')); } catch (e) { return; } ev.preventDefault();
+  if (!entwurf.some(c => c.art === 'version' && c.version === x.nr && c.projekt === x.p)) { const ref = naechsteRef();
+    entwurf.push({art: 'version', ref, projekt: x.p, version: x.nr, label: (version(x.p, x.nr) || {}).name || ''}); refEinsetzen(ref); }
+  entwurfRender(); };
+ta.oninput = () => entwurfRender();
+
+/* ================================================================ Picker: wählt aus dem, was die Ansicht gerade zeigt */
+const ziel = el => el.closest('[data-id],[data-pick],[data-r],[data-cmd],[data-pr],button,label,input,select,textarea,a,h1,h2,h3,tr,.box,.ed,pre') || el.closest('svg') || el;
+function beschreibung(el) {
+  const sichtbar = el.querySelector && el.querySelector(':scope > text');     // Netzknoten: die sichtbare Beschriftung, nicht der Tooltip
+  const t = el.querySelector && el.querySelector(':scope > title');
+  let s = (sichtbar && sichtbar.textContent) || (t && t.textContent) || el.getAttribute('aria-label') || el.getAttribute('title') || el.textContent;
+  if (!s && /^(input|select|textarea)$/i.test(el.tagName)) { const l = el.closest('label') || (el.id && el.ownerDocument.querySelector(`label[for="${el.id}"]`)); s = (l && l.textContent) || el.getAttribute('placeholder') || el.value || ''; if (s) s = (el.type === 'checkbox' ? (el.checked ? '☑ ' : '☐ ') : '') + s; }
+  for (let e = el.parentElement, i = 0; !s.trim() && e && i < 3; e = e.parentElement, i++) s = e.textContent || '';     // Farbfeld in der Legende: Text daneben
+  s = s || el.tagName.toLowerCase();
+  if (s.trim().length <= 3 && el.parentElement) { const z = (el.parentElement.closest('label,li,tr,[data-pick]') || el.parentElement).textContent.replace(/\s+/g, ' ').trim(); if (z && z !== s.trim()) s = `${s.trim()} (in „${z.slice(0, 40)}“)`; }
+  s = s.replace(/\s+/g, ' ').trim(); return s.length > 70 ? s.slice(0, 69) + '…' : s;
+}
+function pfad(el) {
+  if (el.id) return '#' + CSS.escape(el.id);
+  for (const a of ['id', 'pick', 'cmd', 'pr', 'r']) if (el.dataset && el.dataset[a]) return `[data-${a}="${el.dataset[a]}"]`;
+  const teile = []; let e = el;
+  while (e && e.nodeType === 1 && e.tagName !== 'BODY' && teile.length < 6) {
+    let s = e.tagName.toLowerCase(); if (e.id) { teile.unshift('#' + CSS.escape(e.id)); break; }
+    const p = e.parentElement; if (p) { const gl = [...p.children].filter(x => x.tagName === e.tagName); if (gl.length > 1) s += `:nth-of-type(${gl.indexOf(e) + 1})`; }
+    teile.unshift(s); e = p;
+  }
+  return teile.join(' > ');
+}
+let hoverEl = null;
+function pickerAn() { const d = frameDoc(); if (!d) return;
+  d.addEventListener('mouseover', pOver, true); d.addEventListener('click', pClick, true); d.addEventListener('keydown', pKey, true); pickMarken(); }
+function pickerAus() { const d = frameDoc();
+  if (d) { d.removeEventListener('mouseover', pOver, true); d.removeEventListener('click', pClick, true); d.removeEventListener('keydown', pKey, true);
+    d.querySelectorAll('.wb-hover,.wb-gewaehlt').forEach(x => x.classList.remove('wb-hover', 'wb-gewaehlt')); }
+  hoverEl = null; }
+function pOver(ev) { const z = ziel(ev.target); if (hoverEl && hoverEl !== z) hoverEl.classList.remove('wb-hover'); hoverEl = z; z.classList.add('wb-hover'); }
+function pClick(ev) {
+  ev.preventDefault(); ev.stopPropagation(); if (ansV == null) return;
+  const z = ziel(ev.target); const sel = pfad(z); const nr = vergleich ? vorgaenger(ansP, ansV).nr : ansV;
+  const i = entwurf.findIndex(c => c.art === 'element' && c.selektor === sel && c.version === nr && c.projekt === ansP);
+  if (i >= 0) { const c = entwurf.splice(i, 1)[0]; if (c.ref) refEntfernen(c.ref); }
+  else { const ref = naechsteRef();
+    entwurf.push({art: 'element', ref, projekt: ansP, version: nr, id: (z.dataset && (z.dataset.id || z.dataset.pick || z.dataset.cmd || z.dataset.pr)) || null, label: beschreibung(z), selektor: sel});
+    refEinsetzen(ref); }
+  entwurfRender(); pickMarken();
+}
+function pKey(ev) { if (ev.key === 'Escape') pickerUmschalten(false); }
+function pickMarken() { const d = frameDoc(); if (!d || !picken) return; d.querySelectorAll('.wb-gewaehlt').forEach(x => x.classList.remove('wb-gewaehlt'));
+  entwurf.filter(c => c.art === 'element' && c.version === ansV && c.projekt === ansP).forEach(c => { try { d.querySelectorAll(c.selektor).forEach(x => x.classList.add('wb-gewaehlt')); } catch (e) { /* weg */ } }); }
+function pickerUmschalten(an) {
+  picken = an == null ? !picken : an; $('picker').classList.toggle('on', picken);
+  $('pickhinweis').textContent = picken ? `Im Mockup anklicken (mehrere möglich, erneuter Klick entfernt), Esc beendet · wählt aus ${projekt(ansP).name}${ansV ? ' V' + ansV : ''}` : '';
+  picken ? pickerAn() : pickerAus();
+}
+$('picker').onclick = () => pickerUmschalten();
+document.addEventListener('keydown', ev => {
+  if (ev.key === 'Escape' && picken) pickerUmschalten(false);
+  if ((ev.key === 'v' || ev.key === 'V') && !['TEXTAREA', 'INPUT', 'SELECT'].includes(ev.target.tagName)) umschalten();
+});
+
+/* ================================================================ Zustand der angezeigten Seite
+   Neue Mockups stellen window.__zustand() und window.__setzeZustand(z) bereit; ältere werden über ihren Browserspeicher
+   gelesen und wiederhergestellt (gleicher Ursprung). Dazu Fenstergröße und Scrollstellen aller gescrollten Flächen. */
+function zustandLesen() {
+  const w = $('frame').contentWindow, d = frameDoc(); if (!w || !d || ansV == null) return null;
+  const z = {projekt: ansP, version: vergleich ? vorgaenger(ansP, ansV).nr : ansV, fenster: {b: w.innerWidth, h: w.innerHeight, dpr: w.devicePixelRatio || 1}, scroll: [], seite: null, quelle: null};
+  try { if (typeof w.__zustand === 'function') { z.seite = w.__zustand(); z.quelle = 'schnittstelle'; } } catch (e) { /* weiter mit Browserspeicher */ }
+  if (!z.seite) { const ls = {};
+    try { for (let i = 0; i < w.localStorage.length; i++) { const k = w.localStorage.key(i); if (k.startsWith('wb:')) continue; const roh = w.localStorage.getItem(k);
+      if (!roh || roh.length > 30000) continue; let v; try { v = JSON.parse(roh); } catch (e) { continue; } if (v && typeof v === 'object' && !Array.isArray(v)) ls[k] = v; } } catch (e) { /* kein Speicher */ }
+    if (Object.keys(ls).length) { z.seite = ls; z.quelle = 'browserspeicher'; } }
+  if (w.scrollX || w.scrollY) z.scroll.push({sel: 'fenster', x: Math.round(w.scrollX), y: Math.round(w.scrollY)});
+  d.querySelectorAll('body *').forEach(el => { if (el.scrollTop || el.scrollLeft) z.scroll.push({sel: pfad(el), x: Math.round(el.scrollLeft), y: Math.round(el.scrollTop)}); });
+  return z;
+}
+function zustandKurz(z) {
+  if (!z) return '–';
+  const s = z.seite ? JSON.stringify(z.seite) : 'nicht lesbar';
+  return `${projekt(z.projekt).name} V${z.version} · Fenster ${z.fenster.b}×${z.fenster.h}` + (z.scroll.length ? ` · gescrollt ${z.scroll.map(x => `${x.sel} ${x.x}/${x.y}`).join(', ')}` : '')
+    + ` · Seite (${z.quelle || '–'}): ${s.length > 420 ? s.slice(0, 420) + '…' : s}`;
+}
+function ladeVersion(p, nr) {
+  return new Promise((res, reject) => {
+    const v = version(p, nr); if (!v) { reject(new Error('Version fehlt.')); return; }
+    const url = new URL(v.datei, location.href).href;
+    if (ansP === p && ansV === nr && !vergleich && frameDoc() && frameDoc().URL === url && frameDoc().readyState === 'complete') { res(); return; }
+    const f = $('frame');
+    const timer = setTimeout(() => { f.removeEventListener('load', h); reject(new Error('Version konnte nicht geladen werden.')); }, 10000);
+    const h = () => { if (!frameDoc() || frameDoc().URL !== url) return; clearTimeout(timer); f.removeEventListener('load', h); setTimeout(res, 120); };
+    f.addEventListener('load', h); ansichtSetzen(p, nr);
+  });
+}
+function neuLaden() { return new Promise(res => { const f = $('frame'); const h = () => { f.removeEventListener('load', h); setTimeout(res, 150); }; f.addEventListener('load', h); f.contentWindow.location.reload(); }); }
+function scrollSetzen(L) { const d = frameDoc(), w = $('frame').contentWindow;
+  (L || []).forEach(s => { if (s.sel === 'fenster') w.scrollTo(s.x, s.y); else { try { const el = d.querySelector(s.sel); if (el) { el.scrollLeft = s.x; el.scrollTop = s.y; } } catch (e) { /* weg */ } } }); }
+async function zustandSetzen(z) {
+  if (!z) return; const w = $('frame').contentWindow;
+  if (z.quelle === 'schnittstelle' && typeof w.__setzeZustand === 'function') w.__setzeZustand(z.seite);
+  else if (z.quelle === 'browserspeicher' && z.seite) { Object.entries(z.seite).forEach(([k, v]) => { try { w.localStorage.setItem(k, typeof v === 'string' ? v : JSON.stringify(v)); } catch (e) { /* voll */ } }); await neuLaden(); }
+  await new Promise(r => setTimeout(r, 80)); scrollSetzen(z.scroll);
+}
+
+/* ================================================================ Snapshot: einfrieren, markieren, Treffer rechnen, als SC anhängen */
+let SNAP = null, assets = null, h2cLaden = null;
+const SNAPS = new Map();
+const KAND = '[data-id],[data-id] > :not(title),[data-pick],[data-r],[data-cmd],[data-pr],button,label,input,select,textarea,a,h1,h2,h3,li,td,th,text,.chip,.pill';
+function naechsteSC() { return 'SC' + (entwurf.filter(c => /^SC\d+$/.test(c.ref || '')).reduce((m, c) => Math.max(m, +c.ref.slice(2)), 0) + 1); }
+function html2canvasLaden() {
+  if (window.html2canvas) return Promise.resolve(true);
+  return h2cLaden = h2cLaden || new Promise(res => { const s = document.createElement('script'); s.src = 'vendor/html2canvas-1.4.1.min.js';
+    s.onload = () => res(true); s.onerror = () => { h2cLaden = null; res(false); }; document.head.appendChild(s); });
+}
+async function snapStart() {
+  if (ansV == null) { alertZeile('Keine Version angezeigt, nichts zum Einfrieren.'); return; }
+  if (picken) pickerUmschalten(false);
+  const d = frameDoc(), w = $('frame').contentWindow;
+  SNAP = {id: 'sc-' + crypto.randomUUID(), t: new Date().toISOString(), zustand: zustandLesen(), marker: [], elemente: [], wz: 'rechteck', bild: null, nurAnsicht: false};
+  const u = $('ueber'); u.hidden = false; snapLeiste(); snapZeichnen();
+  $('snapBtn').textContent = 'Anhängen'; $('snapBtn').classList.add('rot'); $('snapWeg').hidden = false;
+  alertZeile('Eingefroren. Rechteck, Kreis oder Pfeil ziehen, Elemente wählen, dann „Anhängen“.');
+  // Bild sofort im eingefrorenen Zustand aufnehmen (die Markierungen kommen erst beim Anhängen dazu)
+  const sn = SNAP;
+  sn.bildP = (async () => { if (!(await html2canvasLaden())) return null;
+    try { return await window.html2canvas(d.documentElement, {x: w.scrollX, y: w.scrollY, width: w.innerWidth, height: w.innerHeight, windowWidth: w.innerWidth, windowHeight: w.innerHeight, scale: 1, logging: false, backgroundColor: '#ffffff'}); }
+    catch (e) { sn.bildFehler = String(e); return null; } })();
+}
+function snapBeenden() { SNAP = null; $('ueber').hidden = true; $('snapBtn').textContent = 'Snapshot'; $('snapBtn').classList.remove('rot'); $('snapWeg').hidden = true; alertZeile(''); }
+function snapLeiste() {
+  const L = $('ueberLeiste');
+  if (SNAP.nurAnsicht) { L.innerHTML = `<b>${esc(SNAP.ref)}</b><span>${esc(projekt(SNAP.zustand.projekt).name)} V${SNAP.zustand.version} · ${zeit(SNAP.t)} · Zustand wiederhergestellt, Markierungen darübergelegt</span><button id="ueberZu">Schließen</button>`;
+    $('ueberZu').onclick = snapBeenden; return; }
+  L.innerHTML = [['rechteck', 'Rechteck'], ['kreis', 'Kreis'], ['pfeil', 'Pfeil'], ['element', 'Element wählen']].map(([k, t]) => `<button data-wz="${k}" class="${SNAP.wz === k ? 'on' : ''}">${t}</button>`).join('')
+    + `<span>${SNAP.marker.length} Markierungen · ${SNAP.elemente.length} Elemente · Klick auf eine Nummer löscht</span>`;
+  L.querySelectorAll('[data-wz]').forEach(b => b.onclick = () => { SNAP.wz = b.dataset.wz; snapLeiste(); });
+}
+/* Koordinaten: Überlagerung liegt deckungsgleich über dem Rahmen; Seitenkoordinaten = Überlagerung minus Rahmenkante */
+const rk = () => { const f = $('frame'); return {x: f.clientLeft, y: f.clientTop}; };
+const zuSeite = (ev) => { const r = $('ueberSvg').getBoundingClientRect(), k = rk(); return {x: ev.clientX - r.left - k.x, y: ev.clientY - r.top - k.y}; };
+function snapZeichnen(tmp) {
+  const k = rk(); const R = '#d62d20';
+  const form = (m, zu) => { const x = m.x + k.x, y = m.y + k.y;
+    if (m.form === 'kreis') return `<ellipse cx="${x + m.w / 2}" cy="${y + m.h / 2}" rx="${m.w / 2}" ry="${m.h / 2}" fill="rgba(214,45,32,.07)" stroke="${R}" stroke-width="2.5"/>`;
+    if (m.form === 'pfeil') { const a = Math.atan2(m.y2 - m.y, m.x2 - m.x), x2 = m.x2 + k.x, y2 = m.y2 + k.y;
+      return `<line x1="${x}" y1="${y}" x2="${x2}" y2="${y2}" stroke="${R}" stroke-width="2.5"/><path d="M${x2} ${y2} L${x2 - 12 * Math.cos(a - .45)} ${y2 - 12 * Math.sin(a - .45)} L${x2 - 12 * Math.cos(a + .45)} ${y2 - 12 * Math.sin(a + .45)} Z" fill="${R}"/>`; }
+    return `<rect x="${x}" y="${y}" width="${m.w}" height="${m.h}" fill="rgba(214,45,32,.07)" stroke="${R}" stroke-width="2.5" rx="2"/>`; };
+  const marke = (m) => { const x = (m.form === 'pfeil' ? m.x : m.x) + k.x, y = m.y + k.y;
+    return `<g class="mnr" data-m="${m.nr}"><circle cx="${x}" cy="${y}" r="9" fill="${R}"/><text x="${x}" y="${y + 3.5}" text-anchor="middle" fill="#fff" font-size="10" font-weight="700">${m.nr.replace('M', '')}</text></g>`
+      + (m.label ? `<text x="${x + 13}" y="${y - 6}" fill="${R}" font-size="12" font-weight="600" style="paint-order:stroke;stroke:#fff;stroke-width:3px">${esc(m.label)}</text>` : ''); };
+  const el = (e) => `<rect x="${e.box[0] + k.x}" y="${e.box[1] + k.y}" width="${e.box[2]}" height="${e.box[3]}" fill="none" stroke="#1c5cab" stroke-width="2" stroke-dasharray="5 3"/>`
+    + `<g class="mnr" data-e="${e.nr}"><rect x="${e.box[0] + k.x - 2}" y="${e.box[1] + k.y - 16}" width="22" height="14" rx="3" fill="#1c5cab"/><text x="${e.box[0] + k.x + 9}" y="${e.box[1] + k.y - 5}" text-anchor="middle" fill="#fff" font-size="10" font-weight="700">${e.nr}</text></g>`;
+  $('ueberSvg').innerHTML = SNAP.marker.map(m => form(m) + marke(m)).join('') + SNAP.elemente.map(el).join('') + (tmp ? form(tmp) : '');
+  if (!SNAP.nurAnsicht) $('ueberSvg').querySelectorAll('.mnr').forEach(g => g.onclick = ev => { ev.stopPropagation();
+    if (g.dataset.m) SNAP.marker = SNAP.marker.filter(m => m.nr !== g.dataset.m); else SNAP.elemente = SNAP.elemente.filter(e => e.nr !== g.dataset.e);
+    snapLeiste(); snapZeichnen(); });
+}
+let zieh = null;
+function snapZeiger() {
+  const s = $('ueberSvg');
+  s.onpointerdown = ev => { if (!SNAP || SNAP.nurAnsicht || ev.target.closest('.mnr')) return; const p = zuSeite(ev);
+    if (SNAP.wz === 'element') { const n = nahe(p.x, p.y, 16)[0]; if (!n) { alertZeile('Dort liegt kein einzelnes Element (nur eine große Fläche). Genauer auf ein Element klicken oder mit Rechteck markieren.'); return; }
+      const z = n.el.ownerSVGElement && n.el.closest('[data-id]') ? n.el.closest('[data-id]') : n.el; const r = n.el.getBoundingClientRect();
+      if (SNAP.elemente.some(e => e.sel === pfad(z))) { alertZeile('Dieses Element ist schon gewählt.'); return; }
+      SNAP.elemente.push({nr: 'E' + (SNAP.elemente.reduce((m, e) => Math.max(m, +e.nr.slice(1)), 0) + 1), id: (z.dataset && (z.dataset.id || z.dataset.pick || z.dataset.cmd || z.dataset.pr)) || null,
+        label: beschreibung(z), sel: pfad(z), box: [r.left, r.top, r.width, r.height].map(Math.round)});
+      snapLeiste(); snapZeichnen(); return; }
+    zieh = {x: p.x, y: p.y}; s.setPointerCapture(ev.pointerId); };
+  s.onpointermove = ev => { if (!zieh) return; const p = zuSeite(ev); snapZeichnen(roh(zieh, p)); };
+  s.onpointerup = ev => { if (!zieh) return; const p = zuSeite(ev); const m = roh(zieh, p); zieh = null;
+    const gross = m.form === 'pfeil' ? Math.hypot(m.x2 - m.x, m.y2 - m.y) > 10 : (m.w > 6 && m.h > 6);
+    if (!gross) { snapZeichnen(); return; }
+    m.nr = 'M' + (SNAP.marker.reduce((a, x) => Math.max(a, +x.nr.slice(1)), 0) + 1); SNAP.marker.push(m); snapLeiste(); snapZeichnen(); beschriften(m); };
+}
+function roh(a, p) { const f = SNAP.wz;
+  if (f === 'pfeil') return {form: 'pfeil', x: Math.round(a.x), y: Math.round(a.y), x2: Math.round(p.x), y2: Math.round(p.y)};
+  return {form: f === 'kreis' ? 'kreis' : 'rechteck', x: Math.round(Math.min(a.x, p.x)), y: Math.round(Math.min(a.y, p.y)), w: Math.round(Math.abs(p.x - a.x)), h: Math.round(Math.abs(p.y - a.y))}; }
+function beschriften(m) {
+  const k = rk(); const i = document.createElement('input'); i.className = 'mlabel'; i.placeholder = `Beschriftung ${m.nr} (Enter, leer lassen geht)`;
+  i.style.left = (m.x + k.x + 14) + 'px'; i.style.top = (m.y + k.y + 6) + 'px'; $('ueber').appendChild(i); i.focus();
+  let erledigt = false;
+  const fertig = () => { if (erledigt) return; erledigt = true; m.label = i.value.trim(); i.remove(); snapZeichnen(); };
+  i.onkeydown = ev => { if (ev.key === 'Enter') fertig(); if (ev.key === 'Escape') { i.value = ''; fertig(); } ev.stopPropagation(); }; i.onblur = fertig;
+}
+
+/* Treffer: welche Elemente liegen unter einer Markierung, wie viel davon, welche überlappen sich, was ragt über */
+function innen(m, x, y) { if (m.form === 'kreis') { const cx = m.x + m.w / 2, cy = m.y + m.h / 2; return ((x - cx) / (m.w / 2)) ** 2 + ((y - cy) / (m.h / 2)) ** 2 <= 1; }
+  return x >= m.x && x <= m.x + m.w && y >= m.y && y <= m.y + m.h; }
+function abdeckung(m, r) { let n = 0; for (let i = 0; i < 6; i++) for (let j = 0; j < 6; j++) if (innen(m, r.left + (i + .5) * r.width / 6, r.top + (j + .5) * r.height / 6)) n++; return n / 36; }
+function blass(el) { let o = 1, e = el; while (e && e.nodeType === 1) { const cs = e.ownerDocument.defaultView.getComputedStyle(e); o *= +cs.opacity; e = e.parentElement; } return o < .35; }
+function eintrag(el, r, a) {
+  const tr = el.closest('[data-id]'); const tag = el.tagName.toLowerCase();
+  const lab = tag === 'text' ? beschreibung(el) : (tr && el.ownerSVGElement && el !== tr ? beschreibung(tr) : beschreibung(el));
+  return {art: tr && el.ownerSVGElement && tag !== 'text' && el !== tr ? 'symbol' : tag, id: (tr && tr.dataset.id) || (el.dataset && (el.dataset.pick || el.dataset.cmd || el.dataset.pr)) || null, label: lab,
+    sel: pfad(el), box: [r.left, r.top, r.width, r.height].map(Math.round), abdeckung: Math.round(a * 100), ...(blass(el) ? {blass: true} : {})};
+}
+const freieLinie = el => !!el.ownerSVGElement && /^(path|line|polyline)$/i.test(el.tagName) && !el.closest('[data-id]');
+function nahe(x, y, radius = 30) {
+  const d = frameDoc(), w = $('frame').contentWindow; const gross = w.innerWidth * w.innerHeight * .25; const L = [];
+  d.querySelectorAll('body *').forEach(el => { if (/^(script|style|title|defs|marker|br|option|svg|g)$/i.test(el.tagName) || freieLinie(el)) return; const r = el.getBoundingClientRect();
+    if (r.width < 1 || r.height < 1 || r.width * r.height > gross) return; const cs = w.getComputedStyle(el); if (cs.visibility === 'hidden' || cs.display === 'none') return;
+    const dx = Math.max(r.left - x, 0, x - r.right), dy = Math.max(r.top - y, 0, y - r.bottom), dist = Math.hypot(dx, dy);
+    if (dist <= radius) L.push({el, r, dist}); });
+  L.sort((a, b) => (a.dist - b.dist) || (a.r.width * a.r.height - b.r.width * b.r.height));
+  const out = [], ges = new Set();
+  L.forEach(k => { const z = k.el.closest('[data-id]') && k.el.ownerSVGElement ? k.el.closest('[data-id]') : k.el; const key = z.dataset && z.dataset.id ? 'id:' + z.dataset.id : z;
+    let e = k.el.ownerSVGElement && z !== k.el ? k.el : z;
+    if (!e.ownerSVGElement) { const a = e.closest('[data-pick],label,button,li,tr'); if (a && a !== d.body) { const ar = a.getBoundingClientRect(); if (ar.width * ar.height < gross / 5) e = a; } }
+    const key2 = e.dataset && (e.dataset.id || e.dataset.pick) ? 'k:' + (e.dataset.id || e.dataset.pick) : key;
+    if (!ges.has(key) && !ges.has(key2)) { ges.add(key); ges.add(key2); out.push({el: e, abstand: Math.round(k.dist)}); } });
+  return out;
+}
+function treffer(m) {
+  const d = frameDoc(), w = $('frame').contentWindow;
+  if (m.form === 'pfeil') {
+    const spitze = nahe(m.x2, m.y2).slice(0, 3).map(k => ({...eintrag(k.el, k.el.getBoundingClientRect(), 1), abstand: k.abstand}));
+    return {zeigtAuf: spitze, von: (() => { const e = d.elementFromPoint(m.x, m.y); return e ? eintrag(ziel(e), ziel(e).getBoundingClientRect(), 1) : null; })()};
+  }
+  const kand = [];
+  d.querySelectorAll('body *').forEach(el => { if (/^(script|style|title|defs|marker|br|option)$/i.test(el.tagName) || freieLinie(el)) return; const r = el.getBoundingClientRect(); if (r.width < 1 && r.height < 1) return;
+    if (r.right < 0 || r.bottom < 0 || r.left > w.innerWidth || r.top > w.innerHeight) return;
+    const cs = w.getComputedStyle(el); if (cs.visibility === 'hidden' || cs.display === 'none') return;
+    const a = abdeckung(m, r); if (a >= .3) kand.push({el, r, a}); });
+  // kleinste zuerst: das Genaueste oben; große Behälter nur, wenn nichts Kleineres getroffen wurde
+  const benannt = el => !!(el.closest('[data-id]') || el.closest('[data-pick]') !== el.ownerDocument.body && el.dataset.pick || /^(input|select|button|label|textarea|a|h1|h2|h3|li|td|th)$/i.test(el.tagName)
+    || ((el.textContent || '').trim().length > 3 && !el.children.length));
+  kand.sort((p, q) => (benannt(q.el) - benannt(p.el)) || (q.a - p.a) || (p.r.width * p.r.height - q.r.width * q.r.height));
+  const flaeche = m.w * m.h; const fein = kand.filter(k => k.r.width * k.r.height <= flaeche * 4);
+  const gesehen = new Set();
+  const liste = (fein.length ? fein : kand).filter(k => { const tr = k.el.closest('[data-id]'); const key = tr ? 'id:' + tr.dataset.id + (k.el.tagName.toLowerCase() === 'text' ? ':text' : '') : k.el;
+    if (gesehen.has(key)) return false; gesehen.add(key); return true; }).slice(0, 12);
+  // Kollisionen: Paare sich überlappender Elemente in der Markierung (ohne Eltern-Kind)
+  const blatt = liste.filter(k => !liste.some(o => o !== k && k.el.contains(o.el)));
+  const koll = [];
+  for (let i = 0; i < blatt.length; i++) for (let j = i + 1; j < blatt.length; j++) { const A = blatt[i].r, B = blatt[j].r;
+    const ow = Math.min(A.right, B.right) - Math.max(A.left, B.left), oh = Math.min(A.bottom, B.bottom) - Math.max(A.top, B.top);
+    if (ow > 1 && oh > 1 && !blatt[i].el.contains(blatt[j].el) && !blatt[j].el.contains(blatt[i].el) && !(blatt[i].el.closest('[data-id]') && blatt[i].el.closest('[data-id]') === blatt[j].el.closest('[data-id]')))
+      koll.push({a: beschreibung(blatt[i].el), b: beschreibung(blatt[j].el), ueberlappung: [Math.round(ow), Math.round(oh)]}); }
+  // Überstand: ragt ein getroffenes Element über seine scrollende oder abschneidende Fläche bzw. das Fenster hinaus?
+  const ueber = [];
+  blatt.forEach(k => { let c = k.el.parentElement; while (c && c !== d.body) { const s = w.getComputedStyle(c); if (/(auto|scroll|hidden)/.test(s.overflow + s.overflowX + s.overflowY)) break; c = c.parentElement; }
+    const C = c && c !== d.body ? c.getBoundingClientRect() : {left: 0, top: 0, right: w.innerWidth, bottom: w.innerHeight}; const r = k.r; const t = [];
+    if (r.left < C.left - 1) t.push(`links ${Math.round(C.left - r.left)} px`); if (r.right > C.right + 1) t.push(`rechts ${Math.round(r.right - C.right)} px`);
+    if (r.top < C.top - 1) t.push(`oben ${Math.round(C.top - r.top)} px`); if (r.bottom > C.bottom + 1) t.push(`unten ${Math.round(r.bottom - C.bottom)} px`);
+    if (t.length) ueber.push({label: beschreibung(k.el), ragt: t.join(', '), ueber: c && c !== d.body ? pfad(c) : 'Fenster'}); });
+  return {liegtUnter: liste.map(k => eintrag(k.el, k.r, k.a)), kollisionen: koll.slice(0, 10), ueberstand: ueber.slice(0, 8)};
+}
+async function snapAnhaengen() {
+  const S = SNAP; if (!S) return;
+  if (!S.marker.length && !S.elemente.length) { alertZeile('Noch nichts markiert: Rechteck, Kreis, Pfeil ziehen oder Element wählen.'); return; }
+  $('snapBtn').disabled = true; $('snapBtn').textContent = 'speichert …';
+  try {
+  S.marker.forEach(m => m.treffer = treffer(m));
+  // Bild: Aufnahme vom Einfrieren plus eingezeichnete Markierungen
+  const cv = await S.bildP; let bild = null, thumb = null;
+  if (cv) {
+    const c = document.createElement('canvas'); c.width = cv.width; c.height = cv.height; const g = c.getContext('2d'); g.drawImage(cv, 0, 0);
+    const sk = cv.width / S.zustand.fenster.b; g.save(); g.scale(sk, sk); g.lineWidth = 2.5; g.strokeStyle = '#d62d20'; g.fillStyle = '#d62d20'; g.font = '600 12px system-ui,sans-serif';
+    S.marker.forEach(m => { g.beginPath();
+      if (m.form === 'kreis') g.ellipse(m.x + m.w / 2, m.y + m.h / 2, m.w / 2, m.h / 2, 0, 0, 2 * Math.PI); else if (m.form === 'pfeil') { g.moveTo(m.x, m.y); g.lineTo(m.x2, m.y2); } else g.rect(m.x, m.y, m.w, m.h);
+      g.stroke(); g.beginPath(); g.arc(m.x, m.y, 9, 0, 2 * Math.PI); g.fill(); g.fillStyle = '#fff'; g.textAlign = 'center'; g.fillText(m.nr.slice(1), m.x, m.y + 4); g.fillStyle = '#d62d20'; g.textAlign = 'left';
+      if (m.label) g.fillText(m.label, m.x + 13, m.y - 6); });
+    g.strokeStyle = '#1c5cab'; g.setLineDash([5, 3]); S.elemente.forEach(e => g.strokeRect(e.box[0], e.box[1], e.box[2], e.box[3])); g.restore();
+    const blob = await new Promise(r => c.toBlob(r, 'image/jpeg', .72));
+    if (!blob) throw new Error('Screenshot konnte nicht erzeugt werden.');
+    const t = document.createElement('canvas'); const tb = 220; t.width = tb; t.height = Math.round(tb * c.height / c.width); t.getContext('2d').drawImage(c, 0, 0, t.width, t.height); thumb = t.toDataURL('image/jpeg', .6);
+    bild = {b: c.width, h: c.height, groesse: blob.size};
+    const a = await assets.upload(blob); bild.asset = a.id; bild.url = a.url;
+  } else throw new Error(S.bildFehler || 'Screenshot-Bibliothek konnte nicht geladen werden.');
+  const ref = naechsteSC();
+  const paket = sauber({ref, t: S.t, zustand: S.zustand, markierungen: S.marker, elemente: S.elemente, bild, thumb});
+  await db.doc('snapshots/' + S.id).set(paket);
+  SNAPS.set(S.id, paket);
+  entwurf.push({art: 'snapshot', ref, snap: S.id, projekt: S.zustand.projekt, version: S.zustand.version, label: `${S.marker.length} Markierung${S.marker.length === 1 ? '' : 'en'}, ${S.elemente.length} Element${S.elemente.length === 1 ? '' : 'e'}`, thumb});
+  refEinsetzen(ref); $('snapBtn').disabled = false; snapBeenden(); entwurfRender();
+  } catch (e) {
+    alertZeile('Snapshot nicht gespeichert: ' + (e.message || e.code || e) + ' Die Markierungen bleiben zum erneuten Speichern erhalten.');
+  } finally { $('snapBtn').disabled = false; if (SNAP && !SNAP.nurAnsicht) $('snapBtn').textContent = 'Anhängen'; }
+}
+async function paketLaden(id) { if (SNAPS.has(id)) return SNAPS.get(id); if (!db) return null; try { const s = await db.doc('snapshots/' + id).get(); if (s.exists) { SNAPS.set(id, s.data()); return s.data(); } } catch (e) { /* weg */ } return null; }
+/* Wiederherstellen: Version laden, Zustand und Scrollstellen setzen, Markierungen als Vektoren darüberlegen */
+async function snapZeigen(id) {
+  const p = await paketLaden(id); if (!p) { alertZeile('Snapshot nicht gefunden.'); return; }
+  if (SNAP && !SNAP.nurAnsicht) { alertZeile('Erst den laufenden Snapshot anhängen oder verwerfen.'); return; }
+  wiederherstellen = true;
+  try {
+    await ladeVersion(p.zustand.projekt, p.zustand.version); await zustandSetzen(p.zustand);
+    SNAP = {nurAnsicht: true, ref: p.ref, t: p.t, zustand: p.zustand, marker: p.markierungen || [], elemente: p.elemente || []};
+    $('ueber').hidden = false; snapLeiste(); snapZeichnen();
+    if (p.bild && /^[a-f0-9]{64}$/.test(p.bild.asset || '')) {
+      $('ueberLeiste').insertAdjacentHTML('beforeend', `<a href="/api/assets/${p.bild.asset}" target="_blank" rel="noopener" style="color:#c2dcff">Gespeichertes Bild</a>`);
+    }
+  } catch (e) { alertZeile('Wiederherstellen fehlgeschlagen: ' + (e.message || e)); }
+  finally { wiederherstellen = false; }
+}
+function snapKurz(p, id) {
+  if (!p) return '(Paket nicht gefunden)';
+  const tr = e => `${e.id ? e.id + ' ' : ''}„${e.label}“${e.abdeckung != null && e.abdeckung < 100 ? ' ' + e.abdeckung + ' %' : ''}${e.blass ? ' (blass)' : ''}`;
+  const m = (p.markierungen || []).map(x => {
+    const kopf = `${x.nr} ${x.form}${x.label ? ' „' + x.label + '“' : ''}`;
+    if (x.form === 'pfeil') return `${kopf}: zeigt auf ${(x.treffer.zeigtAuf || []).map(tr).join(' / ') || 'nichts'}`;
+    const t = x.treffer || {};
+    return `${kopf}: ${(t.liegtUnter || []).slice(0, 5).map(tr).join('; ') || 'nichts getroffen'}`
+      + ((t.kollisionen || []).length ? ` · Überlappung: ${t.kollisionen.map(k => `„${k.a}“ × „${k.b}“ ${k.ueberlappung.join('×')} px`).join('; ')}` : '')
+      + ((t.ueberstand || []).length ? ` · ragt über: ${t.ueberstand.map(u => `„${u.label}“ ${u.ragt}`).join('; ')}` : ''); });
+  const e = (p.elemente || []).map(x => `${x.nr} ${tr(x)}`);
+  return `Snapshot (Datenbank snapshots/${id}, Bild ${p.bild && p.bild.asset ? 'Asset ' + p.bild.asset : (p.bild && p.bild.daten ? 'eingebettet' : 'fehlt')}) · Zustand: ${zustandKurz(p.zustand)}\n  ${m.concat(e).join('\n  ')}`;
+}
+
+/* Nur reine Daten in die Datenbank: kein undefined/NaN/Infinity, höchstens 20 Ebenen, Zustand höchstens 60 KB */
+function sauber(o, tiefe = 0) {
+  if (o === null || typeof o === 'boolean' || typeof o === 'string') return o;
+  if (typeof o === 'number') return Number.isFinite(o) ? o : null;
+  if (tiefe > 20) return null;
+  if (Array.isArray(o)) return o.map(x => { const v = sauber(x, tiefe + 1); return v === undefined ? null : v; });
+  if (typeof o === 'object') { const r = {}; Object.entries(o).forEach(([k, v]) => { if (!k || /^__.*__$/.test(k)) return; const x = sauber(v, tiefe + 1); if (x !== undefined) r[k] = x; }); return r; }
+  return undefined;
+}
+/* Saving and dispatching share one server transaction; retries reuse the message ID. */
+async function senden() {
+  if (sendet || !dienste) return;
+  if (!chatP) { alertZeile('Zuerst ein Projekt anlegen: oben im Chat „+ Neues Projekt …“.'); $('neu').hidden = false; $('neuName').focus(); return; }
+  const text = ta.value.trim(); if (!text && !entwurf.length) { alertZeile('Text schreiben oder Referenzen anhängen.'); return; }
+  sendet = true; $('senden').disabled = true; $('senden').textContent = 'speichert …'; alertZeile('');
+  let id = null;
+  try {
+    const chips = entwurf.slice();
+    for (const c of chips) if (c.art === 'snapshot' && !(await paketLaden(c.snap))) throw new Error('Snapshot fehlt: ' + c.ref);
+    const signature = JSON.stringify({text, chips, projekt: chatP, version: chatV});
+    if (!pendingMessage || pendingMessage.signature !== signature) {
+      const reply_to=window.werkbankQuestion ? await window.werkbankQuestion(chatP) : null;
+      const zst = zustandLesen();
+      const refs = chips.map(c => `${c.ref} = ` + (c.art === 'snapshot' ? snapKurz(SNAPS.get(c.snap), c.snap) : `${projekt(c.projekt).name} V${c.version}: ${c.label}`)).join('\n');
+      const data = sauber({rolle: 'user', text, chips, projekt: chatP, version: chatV, follow_latest: chatV === letzte(chatP), reply_to,
+        ansicht: {projekt: ansP, version: ansV}, zustand: zst, t: new Date().toISOString(), status: 'wartet',
+        auftragstext: `Ziel: ${projekt(chatP).name} V${chatV || 'neu'}\nZustand der Ansicht: ${zustandKurz(zst)}\n\n${text}\n${refs}`});
+      pendingMessage = {id: 'm-' + crypto.randomUUID(), signature, data}; lokal.set('pendingMessage', pendingMessage);
+    }
+    id = pendingMessage.id;
+    OFFEN.set(id, {id, ...pendingMessage.data, status: 'sende'}); chatRender();
+    const result = await dienste.messages.submit(id, pendingMessage.data);
+    OFFEN.set(id, {id, ...result.data}); chatRender();
+    pendingMessage = null; lokal.set('pendingMessage', null);
+    ta.value = ''; marke = null; entwurf = []; entwurfRender(); pickMarken();
+    alertZeile(window.werkbankTerminalBound ? 'Gesendet.' : 'Gespeichert. In deiner Sitzung uiworkbench aufrufen.');
+  } catch (e) {
+    if (id && pendingMessage) OFFEN.set(id, {id, ...pendingMessage.data, status: 'fehler', fehler: e.message || e.code});
+    chatRender(); alertZeile('Speichern nicht bestätigt: ' + (e.message || e.code || e) + ' Der Entwurf bleibt erhalten; erneut senden.');
+  } finally {
+    sendet = false; $('senden').disabled = false; $('senden').textContent = 'Senden'; statusPruefen();
+  }
+}
+$('senden').onclick = senden;
+snapZeiger();
+$('snapBtn').onclick = () => { if (SNAP && !SNAP.nurAnsicht) snapAnhaengen(); else { if (SNAP) snapBeenden(); snapStart(); } };
+$('snapWeg').onclick = () => { snapBeenden(); alertZeile('Snapshot verworfen.'); };
+
+/* ================================================================ Chatfenster: verschieben, an allen Rändern ziehen, minimieren */
+const chat = $('chat');
+const MIN_W = 380, MIN_H = 300;
+function lage() { const p = lokal.get('lage', null);
+  if (p) { chat.style.left = Math.max(0, Math.min(p.x, innerWidth - 120)) + 'px'; chat.style.top = Math.max(0, Math.min(p.y, innerHeight - 40)) + 'px'; if (p.w) { chat.style.width = p.w + 'px'; chat.style.height = p.h + 'px'; } }
+  else { chat.style.left = Math.max(8, innerWidth - 620) + 'px'; chat.style.top = Math.max(8, innerHeight - 580) + 'px'; }
+  chat.classList.toggle('klein', !!lokal.get('klein', false)); $('klein').textContent = chat.classList.contains('klein') ? '▢' : '–'; }
+function merkeLage() { const k = chat.classList.contains('klein'); lokal.set('lage', {x: chat.offsetLeft, y: chat.offsetTop, w: k ? null : chat.offsetWidth, h: k ? null : chat.offsetHeight}); }
+let zug = null;
+$('ckopf').onpointerdown = ev => { if (ev.target.closest('button,select')) return; zug = {x: ev.clientX - chat.offsetLeft, y: ev.clientY - chat.offsetTop}; $('ckopf').setPointerCapture(ev.pointerId); };
+$('ckopf').onpointermove = ev => { if (!zug) return; chat.style.left = Math.max(0, Math.min(innerWidth - 80, ev.clientX - zug.x)) + 'px'; chat.style.top = Math.max(0, Math.min(innerHeight - 30, ev.clientY - zug.y)) + 'px'; };
+$('ckopf').onpointerup = () => { if (!zug) return; zug = null; merkeLage(); };
+chat.querySelectorAll('.rz').forEach(g => {
+  let st = null;
+  g.onpointerdown = ev => { ev.preventDefault(); g.setPointerCapture(ev.pointerId); $('frame').style.pointerEvents = 'none';
+    st = {x: ev.clientX, y: ev.clientY, l: chat.offsetLeft, t: chat.offsetTop, w: chat.offsetWidth, h: chat.offsetHeight, d: g.dataset.d}; };
+  g.onpointermove = ev => { if (!st) return; const dx = ev.clientX - st.x, dy = ev.clientY - st.y;
+    let {l, t, w, h} = st;
+    if (st.d.includes('e')) w = Math.max(MIN_W, Math.min(innerWidth - l, st.w + dx));
+    if (st.d.includes('s')) h = Math.max(MIN_H, Math.min(innerHeight - t, st.h + dy));
+    if (st.d.includes('w')) { w = Math.max(MIN_W, Math.min(st.l + st.w, st.w - dx)); l = st.l + st.w - w; }
+    if (st.d.includes('n')) { h = Math.max(MIN_H, Math.min(st.t + st.h, st.h - dy)); t = st.t + st.h - h; }
+    Object.assign(chat.style, {left: l + 'px', top: t + 'px', width: w + 'px', height: h + 'px'}); };
+  g.onpointerup = () => { if (!st) return; st = null; $('frame').style.pointerEvents = ''; merkeLage(); };
+});
+$('klein').onclick = () => { chat.classList.toggle('klein'); lokal.set('klein', chat.classList.contains('klein')); $('klein').textContent = chat.classList.contains('klein') ? '▢' : '–'; };
+
+/* ================================================================ Local service connection */
+async function statusPruefen() {
+  const status = dienste ? await dienste.status() : {online: false, pending: 0};
+  $('status').classList.toggle('an', !!status.online && !!window.werkbankTerminalReady);
+  $('status').classList.toggle('fehler', !status.online);
+  const connection = !status.online ? 'Server nicht erreichbar' : (window.werkbankTerminalStatus || 'Lokal · kein Agent verbunden');
+  const label = $('status').querySelector('span');
+  if (label.textContent !== connection) label.textContent = connection;
+  $('status').title = connection;
+  const saving = !status.online ? (status.pending ? 'Ungespeichert' : 'Server offline') : status.pending ? 'Speichert …' : 'Gespeichert';
+  if ($('saveStatus').textContent !== saving) $('saveStatus').textContent = saving;
+  $('saveStatus').classList.toggle('fehler', !status.online);
+}
+window.addEventListener('werkbank-storage', () => { if (dienste) statusPruefen(); });
+function arbeitsstandMerken() {
+  if (!oberflaecheBereit || wiederherstellen || vergleich || ansV == null) return;
+  try {
+    const v = version(ansP, ansV), d = frameDoc();
+    if (!v || !d || d.URL !== new URL(v.datei, location.href).href || d.readyState !== 'complete') return;
+    const state = zustandLesen(); if (state) lokal.set('ansichtZustand', sauber(state));
+  } catch (_) { /* An unreadable mockup must not erase the last recorded view. */ }
+}
+async function arbeitsstandLaden() {
+  const saved = lokal.get('ansichtZustand', null);
+  try {
+    if (saved && saved.projekt === ansP && saved.version === ansV) {
+      await ladeVersion(ansP, ansV); await zustandSetzen(saved);
+    }
+  } catch (e) { alertZeile('Arbeitsansicht nicht vollständig wiederhergestellt: ' + e.message); }
+  finally { wiederherstellen = false; oberflaecheBereit = true; $('senden').disabled = false; }
+}
+// Capture the final view before the adapter's pagehide handler flushes pending writes.
+window.addEventListener('pagehide', arbeitsstandMerken, {capture: true});
+setInterval(arbeitsstandMerken, 700);
+function start() {
+  const c = lokal.get('chat', null), a = lokal.get('ansicht', null);
+  const gueltigP = p => PROJ.some(x => x.id === p);
+  chatP = c && gueltigP(c.p) ? c.p : (PROJ[0] ? PROJ[0].id : null); chatV = chatP && c && version(chatP, c.nr) ? c.nr : letzte(chatP);
+  projektwahl(); versionsliste(); ziele();
+  if (a && gueltigP(a.p) && (a.nr == null || version(a.p, a.nr))) ansichtSetzen(a.p, a.nr); else ansichtSetzen(chatP, chatV);
+  episode(true);
+  if (!chatP) { $('neu').hidden = false; alertZeile('Willkommen. Lege zuerst ein Projekt an; danach kannst du im Chat beschreiben, was entstehen soll.'); }
+}
+(async () => {
+  dienste = await window.werkbankServices.connect();
+  db = dienste.db; assets = dienste.assets;
+  lage();
+  pendingMessage = lokal.get('pendingMessage', null);
+  const draft = lokal.get('entwurf', null);
+  if (draft) { ta.value = draft.text || ''; entwurf = draft.chips || []; entwurfRender(); }
+  await statusPruefen();
+  let bereit = {p: false, v: false}, gestartet = false;
+  const weiter = () => { if (!gestartet && bereit.p && bereit.v) { gestartet = true; start(); chatRender(); arbeitsstandLaden(); } };
+  db.collection('projekte').orderBy('t').onSnapshot(s => {
+    PROJ = s.docs.map(d => ({id: d.id, ...d.data()}));
+    bereit.p = true;
+    if (gestartet) { projektwahl(); leiste(); versionsliste(); if (!chatP && PROJ.length) { $('neu').hidden = true; chatSetzen(PROJ[0].id, letzte(PROJ[0].id)); alertZeile(''); } }
+    weiter();
+  }, err => { alertZeile('Projekte nicht lesbar: ' + err.code); });
+  db.collection('versionen').onSnapshot(s => {
+    const vorChat = letzte(chatP), vorAns = letzte(ansP), warGekoppelt = gekoppelt();
+    VERS = s.docs.map(d => ({id: d.id, ...d.data()})); bereit.v = true;
+    if (!gestartet) { weiter(); return; }
+    if (chatV === vorChat && letzte(chatP) !== vorChat) chatSetzen(chatP, letzte(chatP), {folgen: warGekoppelt});
+    else if (!warGekoppelt && ansV === vorAns && letzte(ansP) !== vorAns) ansichtSetzen(ansP, letzte(ansP));
+    else { versionsliste(); leiste(); aenderungen(); }
+  }, err => { alertZeile('Versionen nicht lesbar: ' + err.code); });
+  db.collection('nachrichten').orderBy('t').onSnapshot(s => { MSGS = s.docs.map(d => ({id: d.id, ...d.data()})); if (gestartet) chatRender(); },
+    err => { alertZeile('Verlauf nicht lesbar: ' + err.code); });
+})().catch(e => {
+  $('status').classList.add('fehler'); $('status').querySelector('span').textContent = 'Lokaler Dienst nicht erreichbar';
+  $('aend').innerHTML = '<span class="leer">Werkbank mit „python3 werkbank.py start“ (oder „Werkbank starten.command“) starten und diese Seite über http://127.0.0.1:8119 öffnen.</span>';
+  alertZeile('Start fehlgeschlagen: ' + (e.message || e));
+});
+</script><script src="sessions.js"></script></body></html>
