@@ -29,3 +29,10 @@ die beiden Repositories getrennt bleiben.
 
 Nach `git pull` einer neuen Werkbank-Version `install` erneut ausführen, falls sich die
 Skill-Texte geändert haben (sie sind im Projekt Kopien).
+
+**Wichtig:** Claude Code lädt die Hook-Konfiguration beim Sitzungsstart. Eine Sitzung, die
+schon lief, als `install` die Hooks geschrieben hat, wird nicht automatisch geweckt (beobachtet
+mit Claude Code 2.1.265: `attach` klappt, aber der Wartehook startet nicht). Nach `install` also
+eine neue Sitzung starten und dort `/uiworkbench` aufrufen; in der laufenden Sitzung kann `/hooks`
+die neue Konfiguration sichtbar machen. `python3 werkbank.py status` zeigt mit `wake_armed`, ob
+der Wartehook einer Sitzung tatsächlich läuft.
