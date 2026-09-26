@@ -27,12 +27,15 @@ HOOK_EVENTS = ('Stop', 'SessionStart', 'ConfigChange')
 def reexec_in_venv():
     """Run every subcommand with the project's own interpreter, so that sys.executable in
     generated hook/wake commands always points to the environment that has Playwright."""
-    if not VENV_PY.exists() or Path(sys.executable).resolve() == VENV_PY.resolve() or os.environ.get('WERKBANK_NO_REEXEC'):
+    # Compare the active prefix, not resolved paths: on macOS the venv's python is a symlink to the
+    # same binary as the system python3, so resolve() would wrongly report "already inside".
+    if not VENV_PY.exists() or Path(sys.prefix).resolve() == (ROOT / '.venv').resolve() or os.environ.get('WERKBANK_NO_REEXEC'):
         return
     args = [str(VENV_PY), '-B', str(ROOT / 'werkbank.py'), *sys.argv[1:]]
     if os.name == 'nt':
         raise SystemExit(subprocess.call(args))
-    os.execv(str(VENV_PY), args)
+    env = dict(os.environ); env.pop('__PYVENV_LAUNCHER__', None)
+    os.execve(str(VENV_PY), args, env)
 
 
 def python_for_hooks():

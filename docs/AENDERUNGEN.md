@@ -64,6 +64,19 @@ App-Server-Brücke (`codex_attach.mjs`), die der Skill nicht nutzte.
    nur die Abwesenheit einer Bindung; `attach --detach` löst alle Bindungen der Sitzung.
 8. **Transaktion bei fehlgeschlagener Übernahme**: Der Konfliktzustand wird in einer eigenen
    Transaktion gespeichert (die Rückabwicklung der `sqlite3`-Transaktion hätte ihn sonst verworfen).
+9. **venv-Erkennung auf macOS**: `.venv/bin/python` ist dort ein Symlink auf dieselbe Datei wie
+   `python3`; ein Vergleich aufgelöster Pfade hielt die venv fälschlich für aktiv, und Playwright
+   fehlte. `werkbank.py` vergleicht jetzt `sys.prefix` und startet sich unter der venv neu.
+
+## Rauchtest vom 26.09.2026 (macOS, Python 3.14, Claude Code 2.1.265/2.1.280)
+
+Aus einem fremden Arbeitsverzeichnis: `attach` ohne Projekt (registriert, wartet), Projekt per
+API angelegt, erneutes `attach` bindet, Nachricht gesendet, `werkbank.py hook` mit dem
+Stop-Hook-JSON dieser Sitzung endet mit Exit 2 und Weckhinweis, `next --once --wake-marker`
+liefert den Auftrag mit leerer Basis, `finish --html` besteht die Chromium-Prüfung und erzeugt
+Version 1 unter `projects/<id>/v/001.html`, `detach` beendet den Wartehook. Die automatische
+Zustellung durch Claude Code selbst (Hook-Aufruf durch die CLI) ist damit auf dem Mac noch nicht
+beobachtet; sie entspricht dem unter Windows live verifizierten Ablauf.
 
 ## Nicht geänderte Grenzen
 

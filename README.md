@@ -14,7 +14,7 @@ Sitzung an, in der du `/uiworkbench` (Claude) oder `$uiworkbench` (Codex) eingib
 Voraussetzungen: Python 3.10 oder neuer, Claude Code oder Codex CLI.
 
 ```bash
-git clone <repository-url> ui-werkbank
+git clone https://github.com/hoebel2025-sudo/ui-werkbank.git
 cd ui-werkbank
 python3 werkbank.py setup        # legt .venv an, installiert Playwright + Chromium für die HTML-Prüfung
 ```
