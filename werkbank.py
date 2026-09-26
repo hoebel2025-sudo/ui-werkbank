@@ -127,6 +127,31 @@ def merge_hooks(settings, python_cmd, script_path):
     return settings
 
 
+def install_user():
+    """Make /uiworkbench and the wake hooks available in every session of this user account:
+    ~/.claude/skills, ~/.claude/settings.json (hooks merged) and ~/.codex/skills for Codex."""
+    home = Path.home()
+    root, script, python = str(ROOT), str(ROOT / 'werkbank.py'), python_for_hooks()
+    written = []
+    claude_dir = home / '.claude/skills/uiworkbench'; claude_dir.mkdir(parents=True, exist_ok=True)
+    (claude_dir / 'SKILL.md').write_text(claude_skill(root, '"' + python + '"', script), encoding='utf-8'); written.append(claude_dir / 'SKILL.md')
+    codex_dir = home / '.codex/skills/uiworkbench'; codex_dir.mkdir(parents=True, exist_ok=True)
+    (codex_dir / 'SKILL.md').write_text(codex_skill(root, '"' + python + '"', script), encoding='utf-8'); written.append(codex_dir / 'SKILL.md')
+    settings_path = home / '.claude/settings.json'
+    settings = {}
+    if settings_path.exists():
+        try: settings = json.loads(settings_path.read_text(encoding='utf-8'))
+        except ValueError: raise SystemExit(f'{settings_path} ist kein gueltiges JSON; bitte zuerst reparieren.')
+    backup = settings_path.with_name('settings.json.vor-werkbank')
+    if settings_path.exists() and not backup.exists():
+        shutil.copy2(settings_path, backup); print('Sicherung:', backup)
+    merge_hooks(settings, python, script)
+    settings_path.write_text(json.dumps(settings, ensure_ascii=False, indent=2) + '\n', encoding='utf-8'); written.append(settings_path)
+    for path in written: print('geschrieben:', path)
+    print('Gilt fuer neue Sitzungen in jedem Ordner. Claude: /uiworkbench, Codex: $uiworkbench.')
+    return 0
+
+
 def install(into, settings_file='settings.local.json', generic=False):
     into = Path(into).resolve()
     if generic:
@@ -232,6 +257,21 @@ def cancel(args):
     return 0
 
 
+def requeue(args):
+    """Put a cancelled, interrupted, failed or conflicting message back into the queue."""
+    url = args.url.rstrip('/')
+    state = api(url, 'state')
+    retryable = sorted((k for k, j in state['jobs'].items() if j['state'] in {'cancelled', 'interrupted', 'failed', 'conflict'}),
+                       key=lambda k: state['jobs'][k].get('queued', ''))
+    targets = [args.job] if args.job else retryable[-1:]
+    if not targets:
+        print('Kein abgebrochener Auftrag.'); return 0
+    for job in targets:
+        result = api(url, 'enqueue', {'message': job})
+        print(f"{job}: {result['state']}")
+    return 0
+
+
 def doctor(args):
     import socket
     from werkbank.server import DEFAULT_PORT
@@ -275,12 +315,14 @@ def main(argv=None):
     sub = ap.add_subparsers(dest='command', required=True)
     p = sub.add_parser('setup', help='Umgebung einrichten'); p.add_argument('--no-browser', action='store_true'); p.set_defaults(run=setup)
     p = sub.add_parser('start', help='Dienst starten'); p.add_argument('--port', type=int); p.add_argument('--data-dir', type=Path); p.add_argument('--no-browser', action='store_true'); p.set_defaults(run=start)
-    p = sub.add_parser('install', help='Skill und Hooks in einen Projektordner schreiben'); p.add_argument('--into', required=True)
+    p = sub.add_parser('install', help='Skill und Hooks in einen Projektordner (--into) oder benutzerweit (--user) schreiben')
+    p.add_argument('--into'); p.add_argument('--user', action='store_true', help='~/.claude und ~/.codex: gilt in jedem Ordner')
     p.add_argument('--settings-file', default='settings.local.json', choices=['settings.json', 'settings.local.json'])
     p.add_argument('--generic', action='store_true', help='Vorlagen mit Platzhaltern (fuer das Repository selbst)')
-    p.set_defaults(run=lambda a: install(a.into, a.settings_file, a.generic))
+    p.set_defaults(run=lambda a: install_user() if a.user else (install(a.into, a.settings_file, a.generic) if a.into else ap.error('--into DIR oder --user angeben')))
     p = sub.add_parser('status', help='Sitzungen, Bindungen und Auftraege anzeigen'); p.add_argument('--url', default=DEFAULT_URL); p.set_defaults(run=status)
     p = sub.add_parser('cancel', help='offene Auftraege abbrechen'); p.add_argument('--job'); p.add_argument('--url', default=DEFAULT_URL); p.set_defaults(run=cancel)
+    p = sub.add_parser('requeue', help='abgebrochenen Auftrag erneut einreihen (zuletzt gesendeten oder --job ID)'); p.add_argument('--job'); p.add_argument('--url', default=DEFAULT_URL); p.set_defaults(run=requeue)
     p = sub.add_parser('doctor', help='Umgebung pruefen'); p.set_defaults(run=doctor)
     p = sub.add_parser('test', help='Testsuite ausfuehren'); p.add_argument('pytest_args', nargs='*'); p.set_defaults(run=test)
     sub.add_parser('attach', help='bestehende Sitzung anbinden (siehe attach --help)')

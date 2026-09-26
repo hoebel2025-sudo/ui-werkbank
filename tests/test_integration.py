@@ -99,4 +99,10 @@ def test_cancel_button_frees_a_stuck_job_without_detaching(server):
             assert instance.broker.status()['bindings']['demo']['session'] == client.data['id']
             with pytest.raises(RuntimeError, match='stale_attempt'):
                 client.call('finish', {'attempt': job['attempt']['id'], 'text': 'Zu spaet'})
+            # The cancelled message can be re-queued from the chat without retyping it.
+            pg.wait_for_selector('[data-retry]'); pg.click('[data-retry]')
+            pg.wait_for_function("() => document.getElementById('msgs').textContent.includes('Wartet')")
+            again = client.call('next')
+            assert again['type'] == 'job' and again['job']['id'] == job['job']['id'] and again['attempt']['id'] != job['attempt']['id']
+            assert pg.locator('[data-retry]').count() == 0
         finally: browser.close()

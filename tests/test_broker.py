@@ -74,11 +74,14 @@ def test_only_selected_existing_session_claims_job(setup):
     old = b.next(c['id'])
     job(b, s, 'queued-old-session')
     b.bind('demo', other['id'])
-    assert b.status()['jobs']['queued-old-session']['state'] == 'cancelled'
+    # Started work is fenced; an unclaimed message simply waits for the next session.
+    assert b.status()['jobs']['queued-old-session']['state'] == 'queued'
     assert b.status()['jobs'][old['job']['id']]['state'] == 'cancelled'
     with pytest.raises(StoreError, match='freigegeben'):
         b.finish(c['id'], old['attempt']['id'], 'Zu spaet')
-    assert b.next(other['id'])['type'] == 'idle'
+    handed = b.next(other['id'])
+    assert handed['type'] == 'job' and handed['job']['id'] == 'queued-old-session'
+    assert b.next(c['id'])['type'] == 'idle'
 
 
 def test_takeover_moves_every_binding_and_marks_the_old_session_detached(setup):

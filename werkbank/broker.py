@@ -184,9 +184,11 @@ class Broker:
             self.store.changed.notify_all()
             return {'ready': True, 'boot': self.boot, 'instructions': INSTRUCTIONS}
 
-    def _cancel_project_jobs(self, docs, project, reason):
+    def _cancel_project_jobs(self, docs, project, reason, states=ACTIVE):
+        """Cancel this project's jobs in the given states. A session switch only cancels work that
+        has actually started; queued messages simply wait for the next session."""
         for path, job in docs.items():
-            if path.startswith('auftraege/') and job.get('project') == project and job.get('state') in ACTIVE | {'queued'}:
+            if path.startswith('auftraege/') and job.get('project') == project and job.get('state') in states:
                 job.update(state='cancelled', reason=reason)
                 self._close_attempt(job, 'cancelled'); self.put(path, job)
 
@@ -203,12 +205,12 @@ class Broker:
                 if session not in self.clients() or not live.get('verified') or time.time() - live.get('seen', 0) > LIVE_SECONDS:
                     raise StoreError('not_ready', 'Sitzung muss die Nachrichtenprobe bestätigen und erreichbar sein.', 409)
             if not same_session and previous.get('session'):
-                self._cancel_project_jobs(docs, project, 'Sitzung gewechselt. Dieser Auftrag wird nicht weitergegeben.')
+                self._cancel_project_jobs(docs, project, 'Sitzung gewechselt. Begonnene Arbeit wird nicht weitergegeben.')
             self.put('bindungen/' + project, {'session': session, 'enabled': session is not None, 'auto': bool(auto)})
             if takeover and session is not None:
                 for other, binding in self._bindings(docs).items():
                     if other != project and binding.get('enabled') and binding.get('session') != session:
-                        self._cancel_project_jobs(docs, other, 'Sitzung gewechselt. Dieser Auftrag wird nicht weitergegeben.')
+                        self._cancel_project_jobs(docs, other, 'Sitzung gewechselt. Begonnene Arbeit wird nicht weitergegeben.')
                         self.put('bindungen/' + other, {'session': session, 'enabled': True, 'auto': True})
             self._settle_detached(previous.get('session'))
             self.store._bump()
@@ -231,7 +233,7 @@ class Broker:
             docs = self.docs()
             for project, binding in self._bindings(docs).items():
                 if binding.get('session') == session and binding.get('enabled'):
-                    self._cancel_project_jobs(docs, project, 'Sitzung entkoppelt. Dieser Auftrag wird nicht weitergegeben.')
+                    self._cancel_project_jobs(docs, project, 'Sitzung entkoppelt. Begonnene Arbeit wird nicht weitergegeben.')
                     self.put('bindungen/' + project, {'session': None, 'enabled': False, 'auto': False})
             c = self.clients().get(session)
             if c:

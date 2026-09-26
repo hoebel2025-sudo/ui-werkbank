@@ -30,6 +30,22 @@ die beiden Repositories getrennt bleiben.
 Nach `git pull` einer neuen Werkbank-Version `install` erneut ausführen, falls sich die
 Skill-Texte geändert haben (sie sind im Projekt Kopien).
 
+## Benutzerweit statt je Projekt
+
+Wenn Sitzungen in wechselnden Ordnern starten (etwa ein Launcher, der je Aufgabe einen neuen
+Arbeitsordner anlegt), ist der Projektordner aus Sicht von Claude Code dieser Arbeitsordner; eine
+`.claude/settings.json` in einem übergeordneten Ordner wird dann **nicht** geladen. Dafür gibt es
+die benutzerweite Installation:
+
+```bash
+python3 werkbank.py install --user
+```
+
+Sie schreibt `~/.claude/skills/uiworkbench/SKILL.md`, `~/.codex/skills/uiworkbench/SKILL.md` und
+mischt die Hooks in `~/.claude/settings.json` (vorher wird `settings.json.vor-werkbank` gesichert;
+andere Hooks und Einstellungen bleiben erhalten). Die Hooks laufen dann in jeder Sitzung, beenden
+sich aber sofort, wenn die Sitzung nicht angebunden ist.
+
 **Wichtig:** Claude Code lädt die Hook-Konfiguration beim Sitzungsstart. Eine Sitzung, die
 schon lief, als `install` die Hooks geschrieben hat, wird nicht automatisch geweckt (beobachtet
 mit Claude Code 2.1.265: `attach` klappt, aber der Wartehook startet nicht). Nach `install` also

@@ -306,7 +306,8 @@ function msgHtml(m) {
   let txt = esc(m.text).replace(/Version (\d+)/g, (a, n) => `<span class="vlink" data-v="${n}" data-p="${esc(m.projekt || '')}">${a}</span>`);
   if (mu) txt = txt.replace(mu, r => { const c = m.chips.find(x => x.ref === r); return `<span class="ref${c.art === 'snapshot' ? ' sc' : ''}" data-ref="${r}"${c.snap ? ` data-snap="${esc(c.snap)}"` : ''} title="${esc(chipText(c) + ': ' + c.label)}">${r}</span>`; });
   const jobStatus = window.werkbankJobLabels?.[m.id];
-  const st = m.rolle === 'user' ? (jobStatus ? ' · ' + esc(jobStatus) : ({sende: ' · wird gespeichert …', gesendet: ' · übergeben', beantwortet: ' · beantwortet', wartet: ' · lokal gespeichert · wartet auf Agent',
+  const wieder = m.rolle === 'user' && window.werkbankJobRetry?.[m.id] ? ` <span class="vlink" data-retry="${esc(m.id)}" title="Denselben Auftrag samt Referenzen erneut in die Warteschlange stellen">erneut senden</span>` : '';
+  const st = m.rolle === 'user' ? (jobStatus ? ' · ' + esc(jobStatus) + wieder : ({sende: ' · wird gespeichert …', gesendet: ' · übergeben', beantwortet: ' · beantwortet', wartet: ' · lokal gespeichert · wartet auf Agent',
     fehler: ` · NICHT GESPEICHERT (${esc(m.fehler || 'Fehler')})`}[m.status] || '')) : '';
   const pm = `<span class="pm">${esc(projekt(m.projekt).name)}</span>`;
   return `<div class="msg ${esc(m.rolle)}${m.status === 'fehler' ? ' fehler' : ''}${m.status === 'sende' ? ' sende' : ''}" data-id="${esc(m.id)}">${txt}${chips ? `<div class="chips">${chips}</div>` : ''}<span class="meta">${pm}${({user: 'du', claude: 'Claude', codex: 'Codex', agent: 'Agent', system: 'System'})[m.rolle] || 'Agent'} · ${zeit(m.t)}${m.erzeugt ? ' · erzeugte Version ' + esc(m.erzeugt) : ''}${st}</span></div>`;
@@ -317,7 +318,9 @@ function chatRender() {
   const alle = [...MSGS.filter(m => !OFFEN.has(m.id)), ...OFFEN.values()].sort((a, b) => String(a.t || '').localeCompare(String(b.t || '')));
   box.innerHTML = alle.map(msgHtml).join('') || '<span class="leer">Noch keine Nachrichten.</span>';
   // A stored request alone is no evidence that an agent is working.
-  box.querySelectorAll('.vlink').forEach(e => e.onclick = () => { if (version(e.dataset.p, +e.dataset.v)) chatSetzen(e.dataset.p, +e.dataset.v); });
+  box.querySelectorAll('.vlink[data-v]').forEach(e => e.onclick = () => { if (version(e.dataset.p, +e.dataset.v)) chatSetzen(e.dataset.p, +e.dataset.v); });
+  box.querySelectorAll('[data-retry]').forEach(e => e.onclick = async () => { if (!window.werkbankRequeue) return; e.textContent = 'wird eingereiht …';
+    try { await window.werkbankRequeue(e.dataset.retry); } catch (err) { alertZeile('Erneut senden fehlgeschlagen: ' + (err.message || err)); chatRender(); } });
   box.querySelectorAll('[data-snap]').forEach(e => e.onclick = () => snapZeigen(e.dataset.snap));
   box.querySelectorAll('[data-ref]').forEach(e => { const m = alle.find(x => x.id === e.closest('.msg').dataset.id); const c = m && (m.chips || []).find(x => x.ref === e.dataset.ref);
     if (c) { e.onmouseenter = () => refZeigen(c, true); e.onmouseleave = () => refZeigen(c, false); } });

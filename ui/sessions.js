@@ -47,8 +47,9 @@
     if(!state||typeof chatP==='undefined')return;
     const jobLabels=Object.fromEntries(Object.entries(state.jobs).map(([id,j])=>[id,
       (labels[j.state]||j.state)+(j.reason?' · '+j.reason:'')]));
-    if(JSON.stringify(jobLabels)!==JSON.stringify(window.werkbankJobLabels)){
-      window.werkbankJobLabels=jobLabels;if(typeof chatRender==='function')chatRender();
+    const retry=Object.fromEntries(Object.entries(state.jobs).filter(([,j])=>['cancelled','interrupted','failed','conflict'].includes(j.state)).map(([id])=>[id,true]));
+    if(JSON.stringify(jobLabels)!==JSON.stringify(window.werkbankJobLabels)||JSON.stringify(retry)!==JSON.stringify(window.werkbankJobRetry)){
+      window.werkbankJobLabels=jobLabels;window.werkbankJobRetry=retry;if(typeof chatRender==='function')chatRender();
     }
     const binding=(chatP&&state.bindings[chatP])||{}, session=state.sessions.find(s=>s.id===binding.session);
     const active=chatP?Object.values(state.jobs).find(j=>j.project===chatP&&['working','question','review'].includes(j.state)):null;
@@ -83,5 +84,7 @@
     return question?.id||null;
   };
   window.werkbankRefresh=refresh;
+  // Re-queue a cancelled/interrupted/failed message with its original text, references and snapshots.
+  window.werkbankRequeue=async(message)=>{const job=await api('enqueue',{message});await refresh();return job;};
   refresh();setInterval(refresh,900);
 })();
