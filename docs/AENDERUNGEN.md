@@ -74,9 +74,20 @@ Aus einem fremden Arbeitsverzeichnis: `attach` ohne Projekt (registriert, wartet
 API angelegt, erneutes `attach` bindet, Nachricht gesendet, `werkbank.py hook` mit dem
 Stop-Hook-JSON dieser Sitzung endet mit Exit 2 und Weckhinweis, `next --once --wake-marker`
 liefert den Auftrag mit leerer Basis, `finish --html` besteht die Chromium-Prüfung und erzeugt
-Version 1 unter `projects/<id>/v/001.html`, `detach` beendet den Wartehook. Die automatische
-Zustellung durch Claude Code selbst (Hook-Aufruf durch die CLI) ist damit auf dem Mac noch nicht
-beobachtet; sie entspricht dem unter Windows live verifizierten Ablauf.
+Version 1 unter `projects/<id>/v/001.html`, `detach` beendet den Wartehook.
+
+**Automatisches Wecken live (26.09.2026, macOS, Claude Code 2.1.265):** Nach `install --user`
+wurde eine kopflose Claude-Sitzung (`claude -p`) in einem beliebigen Ordner gestartet, die sich an
+eine Werkbank auf Port 8123 anband. Claude Code rief nach dem Turn den Stop-Hook auf
+(`armed`, Host-PID des Claude-Prozesses, Sitzung `wake_armed`). Eine über die API gesendete
+Nachricht führte innerhalb von 12 Sekunden zu `wake`, die Sitzung führte `next --once --wake-marker`
+aus und übernahm den Auftrag (`wake_verified`, Zustand `working`). Sitzungen, die in einem
+Unterordner mit eigenem Projektkontext starten, laden dagegen keine `settings.json` eines
+übergeordneten Ordners; dafür ist `install --user` da (siehe EINBINDEN.md).
+
+Bekannte Eigenheit: Im kopflosen Modus (`claude -p`) endet der Claude-Prozess nicht, solange der
+Wartehook läuft, weil er auf das Wecken wartet. `werkbank.py detach` beendet den Wartehook und
+damit den Prozess. Interaktive Sitzungen sind davon im Betrieb nicht betroffen.
 
 ## Nicht geänderte Grenzen
 
